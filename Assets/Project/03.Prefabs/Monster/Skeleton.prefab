@@ -47,7 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Normal
   type: 0
   hp: 1
-  moveSpeed: 0.5
+  moveSpeed: 0.25
 --- !u!1001 &7583528814964963337
 PrefabInstance:
   m_ObjectHideFlags: 0

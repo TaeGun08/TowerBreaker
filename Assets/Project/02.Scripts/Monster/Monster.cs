@@ -10,14 +10,38 @@ public enum MonsterType
 public abstract class Monster : MonoBehaviour
 {
     [SerializeField] private MonsterType type;
-    [SerializeField] private int hp;
+    [SerializeField] protected int hp;
     [SerializeField] private float moveSpeed;
 
+    public event Action<Monster> OnDie;
+    public int CurrentHP { get; private set; }
     public bool IsMoveStop { get; set; }
+
+    protected virtual void Start()
+    {
+        CurrentHP = hp;
+    }
 
     protected void Update()
     {
         if (IsMoveStop) return;
         transform.Translate(Vector2.left * (moveSpeed * Time.deltaTime));
+    }
+
+    public void TakeDamage(int damage)
+    {
+        if (CurrentHP <= 0) return;
+
+        CurrentHP -= damage;
+        if (CurrentHP <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        OnDie?.Invoke(this);
+        Destroy(gameObject);
     }
 }

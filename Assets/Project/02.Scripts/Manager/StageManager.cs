@@ -8,36 +8,40 @@ public class StageManager : SingletonBase<StageManager>
     [field: SerializeField] public int StageCount { get; private set; }
     
     // 현재 진행 중인 발판의 몬스터 군집
-    // public Swarm CurrentSwarm { get; set; }
+    private Swarm currentSwarm;
+    public Swarm CurrentSwarm 
+    { 
+        get => currentSwarm;
+        set 
+        {
+            // 이전 군집 처리
+            if (currentSwarm != null)
+            {
+                currentSwarm.SetMoveStop(true);
+                currentSwarm.OnCleared -= NextStage; // 이벤트 해제
+            }
+
+            currentSwarm = value;
+
+            // 새로운 현재 군집 처리
+            if (currentSwarm != null)
+            {
+                currentSwarm.SetMoveStop(false);
+                currentSwarm.OnCleared += NextStage; // 다 죽으면 다음 스테이지로
+            }
+        }
+    }
 
     private void Update()
     {
-        // Z키: 현재 군집의 맨 앞 몬스터 공격
-        if (Input.GetKeyDown(KeyCode.Z))
-        {
-            /*
-            if (CurrentSwarm != null && !CurrentSwarm.IsCleared)
-            {
-                CurrentSwarm.AttackFront();
-            }
-            */
-        }
-
-        // Space키: 군집 처치 완료 시 다음 스테이지로 진행
+        // Space키: 현재 군집의 맨 앞 몬스터 공격
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            // 임시로 무조건 다음 스테이지로 진행하도록 변경
-            NextStage();
-            /*
-            if (CurrentSwarm == null || CurrentSwarm.IsCleared)
+            if (CurrentSwarm != null && !CurrentSwarm.IsCleared)
             {
-                NextStage();
+                // 임시로 데미지 10 부여
+                CurrentSwarm.AttackFront(10);
             }
-            else
-            {
-                Debug.Log("[StageManager] 모든 몬스터를 처치해야 진행할 수 있습니다.");
-            }
-            */
         }
     }
 
