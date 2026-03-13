@@ -4778,6 +4778,7 @@ GameObject:
   - component: {fileID: 3893793136243070305}
   - component: {fileID: 8458378482161311510}
   - component: {fileID: 8900768307157443573}
+  - component: {fileID: 8903768881616969508}
   m_Layer: 3
   m_Name: Player_Unit
   m_TagString: Untagged
@@ -4879,16 +4880,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerUnit
   dontDestroy: 0
   animator: {fileID: 5657525929778947844}
-  attackRange: 1
-  attackDamage: 1
-  attackCooldown: 0.3
+  attackEffectPrefab: {fileID: 3042519775331041172, guid: 841004c4c6a39e244abe2257394de913, type: 3}
+  dashEffectPrefab: {fileID: 500345726442012828, guid: 50a810bfd70577b41a2d43ae0241ea2d, type: 3}
+  guardEffectPrefab: {fileID: 3022102558446658867, guid: cd3d579a2d65b3241a1812f639db37ec, type: 3}
+  effectYOffset: 0.25
+  baseStats:
+    maxHp: 100
+    defense: 5
+    baseDamage: 1
+    critChance: 0.1
+    critDamageMultiplier: 1.5
+    doubleHitChance: 0.05
+    secondHitDamageRatio: 0.5
   dashDistance: 1
   dashDuration: 0.1
-  dashStopThreshold: 1
-  guardPushDistance: 1
-  playerKnockbackDistance: 0.3
-  guardDuration: 0.3
+  dashStopThreshold: 0.8
   startPosition: {x: -1.4, y: -0.1, z: 0}
+  attackRange: 0.8
+  attackCooldown: 0.3
+  guardRange: 0.8
+  guardDuration: 0.3
+  guardPushDistance: 0.8
+  playerKnockbackDistance: 0.3
+--- !u!114 &8903768881616969508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2880519083822535508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcb82d80f64297f48929af731c627e32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VisualFeedback
 --- !u!1 &2931010435283640714
 GameObject:
   m_ObjectHideFlags: 0
@@ -6769,7 +6794,7 @@ SortingGroup:
   m_Enabled: 1
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 5
+  m_SortingOrder: 6
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0
 --- !u!95 &5657525929778947844

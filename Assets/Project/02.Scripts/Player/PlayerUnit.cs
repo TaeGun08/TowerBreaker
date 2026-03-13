@@ -1,57 +1,77 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerUnit : SingletonBase<PlayerUnit>
+[RequireComponent(typeof(VisualFeedback))]
+public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 {
     [Header("References")]
     [SerializeField] private Animator animator;
+    private VisualFeedback _feedback;
 
-    [Header("Combat Config")]
-    [SerializeField] private float attackRange = 1.0f;
-    [SerializeField] private int attackDamage = 10;
-    [SerializeField] private float attackCooldown = 0.3f; 
+    [Header("Effects")]
+    [SerializeField] private GameObject attackEffectPrefab; 
+    [SerializeField] private GameObject dashEffectPrefab;   
+    [SerializeField] private GameObject guardEffectPrefab;  
+    [SerializeField] private float effectYOffset = 0.5f;
 
-    [Header("Dash Config")]
+    [Header("Stats & Status")]
+    [SerializeField] private PlayerStats baseStats; 
+    public int CurrentHP { get; private set; }
+    public PlayerStats Stats => baseStats; 
+
+    [Header("Movement Settings")]
     [SerializeField] private float dashDistance = 0.5f;
     [SerializeField] private float dashDuration = 0.1f;
     [SerializeField] private float dashStopThreshold = 0.3f; 
-    
-    [Header("Guard Config")]
-    [SerializeField] private float guardPushDistance = 1.0f; 
-    [SerializeField] private float playerKnockbackDistance = 0.3f; 
-    [SerializeField] private float guardDuration = 0.2f;
-
-    [Header("Visual Config")]
     [SerializeField] private Vector3 startPosition = new Vector3(-1.4f, -0.1f, 0f);
 
-    private bool _isDashing;
-    private bool _isAttacking;
-    private bool _isGuarding;
-    private bool _isTransitioning;
+    [Header("Combat Settings")]
+    [SerializeField] private float attackRange = 1.0f;
+    [SerializeField] private float attackCooldown = 0.3f; 
+    [SerializeField] private float guardRange = 1.0f; 
+    [SerializeField] private float guardDuration = 0.2f;
+    [SerializeField] private float guardPushDistance = 1.0f; 
+    [SerializeField] private float playerKnockbackDistance = 0.3f; 
+
+    private bool _isDashing, _isAttacking, _isGuarding, _isTransitioning, _isUsingSkill;
     
+    public bool IsInvulnerable { get; set; } 
     public bool IsTransitioning => _isTransitioning;
+
+    private readonly List<SkillBase> _skills = new List<SkillBase>();
+    private static readonly int AnimMoveTrigger = Animator.StringToHash("1_Move");
+    private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
 
     protected override void Awake()
     {
         dontDestroy = false;
         base.Awake();
+        CurrentHP = baseStats.maxHp;
+        _feedback = GetComponent<VisualFeedback>();
+        if (animator == null) animator = GetComponentInChildren<Animator>();
+        InitializeSkills();
+    }
+
+    private void InitializeSkills()
+    {
+        _skills.Clear();
+        _skills.Add(new Skill_LeapStrike());
+        _skills.Add(new Skill_CycloneSlash());
+        _skills.Add(new Skill_HolyShield());
     }
 
     private void Start()
     {
         if (StageManager.Instance != null)
-        {
             StageManager.Instance.OnStageProgress += RespawnAtStart;
-        }
     }
 
     protected override void OnDestroy()
     {
         if (StageManager.Instance != null)
-        {
             StageManager.Instance.OnStageProgress -= RespawnAtStart;
-        }
         base.OnDestroy();
     }
 
@@ -64,53 +84,75 @@ public class PlayerUnit : SingletonBase<PlayerUnit>
     {
         Camera cam = Camera.main;
         if (cam == null) return;
-
         float screenHalfWidth = cam.orthographicSize * cam.aspect;
         float limitX = screenHalfWidth * 0.8f;
-
         Vector3 pos = transform.position;
         pos.x = Mathf.Clamp(pos.x, -limitX, limitX);
         transform.position = pos;
     }
 
-    #region Input Actions
+    #region Input & Actions
     
-    public void PerformAttack()
+    public void PerformAttack() { if (CanInput()) StartCoroutine(AttackCoroutine()); }
+    public void PerformDash() { if (CanInput()) StartCoroutine(DashCoroutine()); }
+    public void PerformGuard() { if (CanInput() && CanPerformGuard()) StartCoroutine(GuardCoroutine()); }
+
+    private bool CanPerformGuard()
     {
-        if (CanInput() == false) return;
-        StartCoroutine(AttackCoroutine());
+        float pX = transform.position.x;
+        Projectile[] projectiles = FindObjectsByType<Projectile>(FindObjectsSortMode.None);
+        foreach (var proj in projectiles)
+        {
+            if (proj != null && proj.transform.position.x >= pX - 0.2f && proj.transform.position.x <= pX + guardRange) return true;
+        }
+        Monster front = GetCurrentSwarm()?.GetFrontMonster();
+        return front != null && (front.transform.position.x - pX) <= guardRange;
     }
 
-    public void PerformDash()
+    public void UseSkill(int index)
     {
-        if (CanInput() == false) return;
-        StartCoroutine(DashCoroutine());
+        if (!CanInput() || index < 0 || index >= _skills.Count) return;
+        SkillBase skill = _skills[index];
+        if (skill.IsReady) StartCoroutine(SkillSequence(skill));
     }
 
-    public void PerformGuard()
+    private IEnumerator SkillSequence(SkillBase skill)
     {
-        if (CanInput() == false) return;
-        StartCoroutine(GuardCoroutine());
+        _isUsingSkill = true;
+        yield return StartCoroutine(skill.Execute(this));
+        _isUsingSkill = false;
     }
 
-    private bool CanInput() => !_isDashing && !_isAttacking && !_isGuarding && !_isTransitioning;
-
+    public bool CanInput() => !_isDashing && !_isAttacking && !_isGuarding && !_isTransitioning && !_isUsingSkill && (_feedback != null && !_feedback.IsStunned);
+    public bool IsActionActive() => _isDashing || _isGuarding;
     private Swarm GetCurrentSwarm() => StageManager.Instance?.CurrentSwarm;
 
     #endregion
 
-    #region Combat Coroutines
+    #region Combat Logic
     
+    public void OnDeflectSuccess(Vector3 position)
+    {
+        GameObject prefab = _isGuarding ? guardEffectPrefab : (_isAttacking ? attackEffectPrefab : dashEffectPrefab);
+        SpawnEffect(prefab, position);
+    }
+
+    private void SpawnEffect(GameObject prefab, Vector3 position)
+    {
+        if (prefab != null)
+        {
+            position.y += effectYOffset;
+            Instantiate(prefab, position, Quaternion.identity);
+        }
+    }
+
     private IEnumerator AttackCoroutine()
     {
         _isAttacking = true;
-
         if (animator != null)
         {
-            animator.SetTrigger("2_Attack");
-            yield return null;
-
-            // 애니메이션 진행도 체크 (70% 시점에서 타격 판정)
+            animator.SetTrigger(AnimAttackTrigger);
+            yield return null; 
             while (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.7f)
             {
                 if (animator.IsInTransition(0)) yield return null;
@@ -118,101 +160,125 @@ public class PlayerUnit : SingletonBase<PlayerUnit>
                 if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.7f) break;
             }
         }
-
-        // 실제 타격 판정 및 연출 연동
-        Swarm swarm = GetCurrentSwarm();
-        if (swarm != null)
-        {
-            bool hitSuccess = swarm.AttackInRange(transform.position.x, attackRange, attackDamage);
-            if (hitSuccess) TriggerCombatJuice(0.05f, 0.08f, 0.05f); // 타격 성공 피드백
-        }
-
+        SpawnEffect(attackEffectPrefab, transform.position + Vector3.right * 0.5f);
+        ProcessAttackLogic();
         yield return new WaitForSeconds(attackCooldown);
         _isAttacking = false;
     }
 
+    private void ProcessAttackLogic()
+    {
+        DeflectProjectilesInRange(attackRange);
+        Swarm swarm = GetCurrentSwarm();
+        if (swarm == null) return;
+
+        int damage = baseStats.baseDamage;
+        bool isCrit = UnityEngine.Random.value < baseStats.critChance;
+        if (isCrit) damage = Mathf.RoundToInt(damage * baseStats.critDamageMultiplier);
+
+        if (swarm.AttackInRange(transform.position.x, attackRange, damage))
+        {
+            if (isCrit) TriggerCombatJuice(0.08f, 0.15f, 0.1f);
+            else TriggerCombatJuice(0.05f, 0.08f, 0.05f);
+
+            if (UnityEngine.Random.value < baseStats.doubleHitChance)
+            {
+                swarm.AttackInRange(transform.position.x, attackRange, Mathf.RoundToInt(damage * baseStats.secondHitDamageRatio));
+            }
+        }
+    }
+
+    private void DeflectProjectilesInRange(float range)
+    {
+        Projectile[] projectiles = FindObjectsByType<Projectile>(FindObjectsSortMode.None);
+        float pX = transform.position.x;
+        foreach (var proj in projectiles)
+        {
+            if (proj != null)
+            {
+                float projX = proj.transform.position.x;
+                if (projX >= pX - 0.2f && projX <= pX + range) proj.Deflect("Deflected");
+            }
+        }
+    }
+
+    public void TakeDamage(int damage)
+    {
+        if (IsInvulnerable || _isTransitioning) return;
+        CurrentHP -= Mathf.Max(1, damage - baseStats.defense);
+        if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.1f, 0.1f);
+        if (_feedback != null) _feedback.PlayHitEffect(canPlayAnimation: CanInput());
+        if (CurrentHP <= 0) Die();
+    }
+
+    private void Die() => Debug.Log("<color=black>Player Dead...</color>");
+
+    #endregion
+
+    #region Other Actions (Dash, Guard, Transitions)
+
     private IEnumerator DashCoroutine()
     {
         _isDashing = true;
-        if (animator != null) animator.SetTrigger("1_Move");
-
+        if (animator != null) animator.SetTrigger(AnimMoveTrigger);
+        SpawnEffect(dashEffectPrefab, transform.position);
         float elapsed = 0f;
         Vector3 startPos = transform.position;
         Vector3 targetPos = startPos + Vector3.right * dashDistance;
-
         while (elapsed < dashDuration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / dashDuration;
-            Vector3 nextPos = Vector3.Lerp(startPos, targetPos, t);
-
+            DeflectProjectilesInRange(0.4f);
+            Vector3 nextPos = Vector3.Lerp(startPos, targetPos, elapsed / dashDuration);
             if (IsMonsterAhead(nextPos)) break; 
-
             transform.position = nextPos;
             yield return null;
         }
-
         _isDashing = false;
     }
 
     private IEnumerator GuardCoroutine()
     {
-        Swarm swarm = GetCurrentSwarm();
-        if (swarm == null) yield break;
-
-        Monster frontMonster = swarm.GetFrontMonster();
-        if (frontMonster == null) yield break;
-
-        float distance = frontMonster.transform.position.x - transform.position.x;
-        if (distance > attackRange + 0.2f) yield break;
-
         _isGuarding = true;
-
-        // 가드 피드백 (화면 흔들림 분리 호출)
-        if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.05f, 0.05f);
-        swarm.Knockback(guardPushDistance, guardDuration);
-
+        DeflectProjectilesInRange(guardRange);
+        Swarm swarm = GetCurrentSwarm();
+        if (swarm != null)
+        {
+            Monster front = swarm.GetFrontMonster();
+            if (front != null && (front.transform.position.x - transform.position.x) <= guardRange)
+            {
+                if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.05f, 0.05f);
+                OnDeflectSuccess(front.transform.position);
+                swarm.Knockback(guardPushDistance, guardDuration);
+            }
+        }
         float elapsed = 0f;
         Vector3 startPos = transform.position;
         Vector3 targetPos = startPos + Vector3.left * playerKnockbackDistance;
-
         while (elapsed < guardDuration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / guardDuration;
-            float ease = 1f - (1f - t) * (1f - t);
+            DeflectProjectilesInRange(guardRange);
+            float ease = 1f - (1f - (elapsed / guardDuration)) * (1f - (elapsed / guardDuration));
             transform.position = Vector3.Lerp(startPos, targetPos, ease);
             yield return null;
         }
         transform.position = targetPos;
-
         _isGuarding = false;
     }
 
-    /// <summary>
-    /// 타격 시 발생하는 시청각 피드백(Juice)을 트리거합니다.
-    /// </summary>
-    private void TriggerCombatJuice(float stopDuration, float shakeIntensity, float shakeDuration)
+    private void TriggerCombatJuice(float stop, float intensity, float duration)
     {
-        if (StageManager.Instance != null) StageManager.Instance.TriggerHitStop(stopDuration);
-        if (CameraManager.Instance != null) CameraManager.Instance.Shake(shakeIntensity, shakeDuration);
+        if (StageManager.Instance != null) StageManager.Instance.TriggerHitStop(stop);
+        if (CameraManager.Instance != null) CameraManager.Instance.Shake(intensity, duration);
     }
 
-    private bool IsMonsterAhead(Vector3 checkPos)
+    private bool IsMonsterAhead(Vector3 pos)
     {
-        Swarm swarm = GetCurrentSwarm();
-        if (swarm == null) return false;
-
-        Monster frontMonster = swarm.GetFrontMonster();
-        if (frontMonster == null) return false;
-
-        return (frontMonster.transform.position.x - checkPos.x) <= dashStopThreshold;
+        Monster front = GetCurrentSwarm()?.GetFrontMonster();
+        return front != null && (front.transform.position.x - pos.x) <= dashStopThreshold;
     }
 
-    #endregion
-
-    #region Floor Transitions
-    
     public void MoveToNextFloorSequence(Action onComplete)
     {
         if (_isTransitioning) return;
@@ -222,42 +288,36 @@ public class PlayerUnit : SingletonBase<PlayerUnit>
     private IEnumerator MoveRightAndExit(Action onComplete)
     {
         _isTransitioning = true;
-        float duration = 0.5f; 
-        float elapsed = 0f;
-        Vector3 startPos = transform.position;
-        Vector3 targetPos = new Vector3(8.0f, transform.position.y, transform.position.z); 
-
+        float elapsed = 0f, duration = 0.5f;
+        Vector3 startPos = transform.position, targetPos = new Vector3(8.0f, startPos.y, 0f);
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            transform.position = Vector3.Lerp(startPos, targetPos, t);
+            transform.position = Vector3.Lerp(startPos, targetPos, elapsed / duration);
             yield return null;
         }
-
         transform.position = targetPos;
         onComplete?.Invoke();
     }
 
-    private void RespawnAtStart() => StartCoroutine(RespawnAtNewFloor());
+    private void RespawnAtStart()
+    {
+        StopAllCoroutines();
+        _isDashing = _isAttacking = _isGuarding = _isUsingSkill = false;
+        StartCoroutine(RespawnAtNewFloor());
+    }
 
     private IEnumerator RespawnAtNewFloor()
     {
-        transform.position = new Vector3(-8.0f, startPosition.y, startPosition.z);
-        
-        float duration = 0.4f;
-        float elapsed = 0f;
-        Vector3 startPos = transform.position;
-        Vector3 targetPos = startPosition;
-
+        transform.position = new Vector3(-8.0f, startPosition.y, 0f);
+        float elapsed = 0f, duration = 0.4f;
+        Vector3 startPos = transform.position, targetPos = startPosition;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            transform.position = Vector3.Lerp(startPos, targetPos, t);
+            transform.position = Vector3.Lerp(startPos, targetPos, elapsed / duration);
             yield return null;
         }
-
         transform.position = targetPos;
         _isTransitioning = false;
     }

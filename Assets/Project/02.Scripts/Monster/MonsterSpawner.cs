@@ -2,55 +2,74 @@ using UnityEngine;
 
 public class MonsterSpawner : MonoBehaviour
 {
-    [Header("Spawn Config")]
-    [SerializeField] private Monster monsterPrefab;
-    [SerializeField] private int minCount = 1;
-    [SerializeField] private int maxCount = 3;
+    [Header("Regular Monsters")]
+    [SerializeField] private Monster commonMonsterPrefab;
+    [SerializeField] private Monster[] eliteMonsterPrefabs;
+    [SerializeField] [Range(0, 1)] private float eliteSpawnChance = 0.25f;
 
-    [Header("Spawn Positioning")]
-    [Tooltip("발판(Ground)의 중심에서 얼마나 떨어진 위치에 생성할지 결정합니다.")]
+    [Header("Boss Monsters")]
+    [SerializeField] private Monster[] bossPrefabs;
+    [SerializeField] private int bossFloorInterval = 5; 
+
+    [Header("Spawn Settings")]
     [SerializeField] private Vector3 spawnOffset = new Vector3(0, 0.5f, 0);
-    
-    [Tooltip("여러 마리 생성 시 몬스터들 간의 X축 간격을 조절합니다.")]
-    [SerializeField] private float spacingX = 0.5f;
+    [SerializeField] private float spacingX = 0.6f;
+    [SerializeField] private int baseMinCount = 1;
+    [SerializeField] private int baseMaxCount = 3;
 
-    /// <summary>
-    /// 플랫폼에 몬스터 군집을 생성합니다.
-    /// 발판 자체를 밀지 않도록 자식 오브젝트(SwarmContainer)를 생성하여 관리합니다.
-    /// </summary>
-    public void SpawnMonsterOnPlatform(GameObject platform)
+    public void SpawnMonsterByFloor(int floorCount, GameObject platform)
     {
-        if (monsterPrefab == null) return;
+        Swarm swarm = GetOrCreateSwarm(platform);
+        bool isBossFloor = (floorCount > 0) && (floorCount % bossFloorInterval == 0);
 
-        // 발판 아래에 Swarm 전용 컨테이너가 있는지 확인
+        if (isBossFloor) SpawnBossSwarm(swarm, floorCount);
+        else SpawnMixedSwarm(swarm, floorCount);
+    }
+
+    private void SpawnBossSwarm(Swarm swarm, int floorCount)
+    {
+        if (bossPrefabs == null || bossPrefabs.Length == 0) return;
+        Monster selectedBoss = bossPrefabs[Random.Range(0, bossPrefabs.Length)];
+        // 층수 정보 전달
+        swarm.SpawnMixed(new[] { selectedBoss }, spawnOffset, 0, floorCount);
+    }
+
+    private void SpawnMixedSwarm(Swarm swarm, int floorCount)
+    {
+        if (commonMonsterPrefab == null) return;
+
+        int bonusCount = floorCount / 10;
+        int totalCount = Random.Range(baseMinCount, baseMaxCount + bonusCount + 1);
+
+        Monster[] prefabsToSpawn = new Monster[totalCount];
+        for (int i = 0; i < totalCount; i++)
+        {
+            if (eliteMonsterPrefabs != null && eliteMonsterPrefabs.Length > 0 && Random.value < eliteSpawnChance)
+                prefabsToSpawn[i] = eliteMonsterPrefabs[Random.Range(0, eliteMonsterPrefabs.Length)];
+            else
+                prefabsToSpawn[i] = commonMonsterPrefab;
+        }
+
+        // 층수 정보 전달
+        swarm.SpawnMixed(prefabsToSpawn, spawnOffset, spacingX, floorCount);
+    }
+
+    private Swarm GetOrCreateSwarm(GameObject platform)
+    {
         Transform swarmTransform = platform.transform.Find("SwarmContainer");
-        Swarm swarm;
-
         if (swarmTransform == null)
         {
             GameObject swarmObj = new GameObject("SwarmContainer");
             swarmObj.transform.SetParent(platform.transform);
             swarmObj.transform.localPosition = Vector3.zero;
-            swarm = swarmObj.AddComponent<Swarm>();
+            return swarmObj.AddComponent<Swarm>();
         }
-        else
-        {
-            swarm = swarmTransform.GetComponent<Swarm>();
-        }
-
-        int count = Random.Range(minCount, maxCount + 1);
-        
-        // MonsterSpawner에 설정된 위치(spawnOffset)와 간격(spacingX)을 전달하여 생성
-        swarm.Spawn(monsterPrefab, count, spawnOffset, spacingX);
+        return swarmTransform.GetComponent<Swarm>();
     }
 
     public void ClearMonsterOnPlatform(GameObject platform)
     {
-        // 자식 오브젝트에서 Swarm을 찾아 제거
         Swarm swarm = platform.GetComponentInChildren<Swarm>();
-        if (swarm != null)
-        {
-            swarm.Clear();
-        }
+        if (swarm != null) swarm.Clear();
     }
 }

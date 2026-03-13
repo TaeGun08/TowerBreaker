@@ -13,23 +13,35 @@ public class Swarm : MonoBehaviour
 
     public bool IsCleared => _monsters.Count == 0;
 
-    public void Spawn(Monster prefab, int count, Vector3 offset, float spacingX)
+    /// <summary>
+    /// 다양한 종류가 섞인 몬스터 군집을 생성합니다.
+    /// </summary>
+    public void SpawnMixed(Monster[] prefabs, Vector3 offset, float spacingX, int floorCount = 0)
     {
         Clear();
-        
+        if (prefabs == null || prefabs.Length == 0) return;
+
+        int count = prefabs.Length;
         float startX = -(count - 1) * spacingX * 0.5f;
 
         for (int i = 0; i < count; i++)
         {
+            Monster prefab = prefabs[i];
             if (prefab == null) continue;
 
             Monster monster = Instantiate(prefab, transform);
+            
             Vector3 spawnPos = offset;
             spawnPos.x += startX + (i * spacingX);
-            
             monster.transform.localPosition = spawnPos;
-            monster.IsMoveStop = true; 
+            
+            monster.IsMoveStop = true;
+            monster.MySwarm = this;
             monster.OnDie += HandleMonsterDie;
+            
+            // 층수에 따른 난이도 보정 적용
+            monster.SetDifficulty(floorCount);
+            
             _monsters.Add(monster);
         }
     }
@@ -40,12 +52,16 @@ public class Swarm : MonoBehaviour
         if (IsCleared) OnCleared?.Invoke();
     }
 
-    /// <summary>
-    /// StageManager에 의해 매 프레임 호출되어 이동 로직을 처리합니다.
-    /// </summary>
-    public void OnTick(PlayerUnit player)
+    private void Update()
     {
-        if (IsCleared || player == null || player.IsTransitioning)
+        if (StageManager.Instance == null || StageManager.Instance.CurrentSwarm != this)
+        {
+            SetMoveStop(true);
+            return;
+        }
+
+        PlayerUnit player = PlayerUnit.Instance;
+        if (player == null || player.IsTransitioning)
         {
             SetMoveStop(true);
             return;
@@ -75,10 +91,6 @@ public class Swarm : MonoBehaviour
         return frontMonster;
     }
 
-    /// <summary>
-    /// 플레이어의 X 좌표와 공격 범위를 기준으로 몬스터들을 공격합니다.
-    /// 타격 성공 여부를 반환합니다.
-    /// </summary>
     public bool AttackInRange(float playerX, float range, int damage, bool damageAll = false)
     {
         if (IsCleared) return false;
@@ -125,7 +137,6 @@ public class Swarm : MonoBehaviour
 
     public void Knockback(float distance, float duration)
     {
-        StopAllCoroutines();
         StartCoroutine(KnockbackCoroutine(distance, duration));
     }
 

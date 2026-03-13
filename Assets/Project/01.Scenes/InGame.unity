@@ -210,11 +210,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed20c5e5158692b498313f04937b6442, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterSpawner
-  monsterPrefab: {fileID: 5232547619596822455, guid: dc8d402a3423a5741a3fc9fdbf85b04c, type: 3}
-  minCount: 10
-  maxCount: 10
+  commonMonsterPrefab: {fileID: 5232547619596822455, guid: dc8d402a3423a5741a3fc9fdbf85b04c, type: 3}
+  eliteMonsterPrefabs:
+  - {fileID: -5270815164970608620, guid: 3d33fbc4f8456b641910a97d78188337, type: 3}
+  - {fileID: 8344725986202278574, guid: 14b8fe849e946794ab7ea821f3097f7a, type: 3}
+  eliteSpawnChance: 0.2
+  bossPrefabs:
+  - {fileID: -5459475695085980695, guid: 26989dccdab3cf34b887350e5e8f3335, type: 3}
+  - {fileID: 3910913239838174930, guid: 0cd0305246d58244eb6e64b543735172, type: 3}
+  bossFloorInterval: 5
   spawnOffset: {x: 2, y: 0.9, z: 0}
   spacingX: 0.3
+  baseMinCount: 10
+  baseMaxCount: 10
 --- !u!4 &131616320
 Transform:
   m_ObjectHideFlags: 0
@@ -1104,6 +1112,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StageManager
   dontDestroy: 0
   <StageCount>k__BackingField: 0
+  maxStageCount: 100
+  autoProceedDelay: 1.5
 --- !u!1 &918491773
 GameObject:
   m_ObjectHideFlags: 0
