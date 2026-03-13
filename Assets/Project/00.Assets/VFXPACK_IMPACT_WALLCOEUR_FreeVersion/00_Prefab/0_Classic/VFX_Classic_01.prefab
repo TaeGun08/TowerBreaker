@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4120136259019067538}
   - component: {fileID: 3124467517051355568}
   - component: {fileID: 5061725512881936796}
+  - component: {fileID: 5060135003861693737}
   m_Layer: 0
   m_Name: VFX_Classic_01
   m_TagString: Untagged
@@ -4897,6 +4898,19 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!114 &5060135003861693737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 500345726442012828}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffa94d2b728ba834abf6ec4a0f07c031, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AutoDestroy
+  lifetime: 1
 --- !u!1 &5262000999327341340
 GameObject:
   m_ObjectHideFlags: 0

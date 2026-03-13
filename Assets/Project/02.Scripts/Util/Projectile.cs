@@ -10,6 +10,7 @@ public class Projectile : MonoBehaviour
     private Vector2 _direction = Vector2.left;
     private Rigidbody2D _rigid;
     private bool _isDeflected = false;
+    public bool IsDeflected => _isDeflected; // 외부 확인용 프로퍼티
 
     public void SetDirection(Vector2 dir) => _direction = dir.normalized;
 

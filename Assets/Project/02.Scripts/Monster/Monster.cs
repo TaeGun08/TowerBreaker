@@ -12,15 +12,17 @@ public abstract class Monster : MonoBehaviour, IDamageable
     [Header("Monster Status")]
     [SerializeField] protected MonsterType type; 
     [SerializeField] protected int hp = 30;
-    
+    [SerializeField] protected float moveSpeed = 1.0f; // 이동 속도 추가
+
     [Header("Visual Effects")]
     [SerializeField] private Corpse[] corpse; 
-    [SerializeField] private RewardChest chestPrefab; // 보상 상자 복구
+    [SerializeField] private RewardChest chestPrefab; 
 
     public event Action<Monster> OnDie;
     public int CurrentHP { get; private set; }
     public Swarm MySwarm { get; set; }
     public bool IsMoveStop { get; set; } 
+    public float MoveSpeed => moveSpeed; // MoveSpeed 속성 추가
 
     protected int currentFloorCount;
     private bool _isDead;

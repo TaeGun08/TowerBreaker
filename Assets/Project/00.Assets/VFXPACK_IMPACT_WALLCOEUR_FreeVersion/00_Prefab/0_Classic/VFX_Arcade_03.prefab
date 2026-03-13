@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6864860825588444682}
   - component: {fileID: 3584774378783718644}
   - component: {fileID: 1151778081756335643}
+  - component: {fileID: -580327484847675004}
   m_Layer: 0
   m_Name: VFX_Arcade_03
   m_TagString: Untagged
@@ -4904,6 +4905,19 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!114 &-580327484847675004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3022102558446658867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffa94d2b728ba834abf6ec4a0f07c031, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AutoDestroy
+  lifetime: 1
 --- !u!1 &5995379031022366584
 GameObject:
   m_ObjectHideFlags: 0

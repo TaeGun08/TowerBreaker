@@ -10,12 +10,10 @@ public class Swarm : MonoBehaviour
     private Monster _cachedFrontMonster;
 
     [Header("Settings")]
-    [SerializeField] private float stopDistance = 0.5f;
-    [SerializeField] private float moveSpeedMultiplier = 1.0f;
+    [SerializeField] private float stopDistance = 0.7f; // 0.8 -> 0.7로 조정
     [SerializeField] private float knockbackCooldown = 0.5f; 
 
     private float _lastKnockbackTime;
-    private bool _isMoveStop;
     private bool _isForcedStop; 
 
     public bool IsCleared => _monsters.Count == 0;
@@ -76,15 +74,17 @@ public class Swarm : MonoBehaviour
         Monster front = GetFrontMonster();
         if (front == null) return;
 
+        // 월드 좌표 기준 플레이어와의 X축 거리 계산
         float distance = front.transform.position.x - player.transform.position.x;
-        _isMoveStop = (distance <= stopDistance);
-
-        if (!_isMoveStop)
+        
+        // 정지 거리보다 멀 때만 이동
+        if (distance > stopDistance)
         {
+            // 군집 내 어떤 몬스터라도 패턴 중(IsMoveStop)이면 군집 전체가 멈춤
             bool anyMonsterActing = _monsters.Exists(m => m != null && m.IsMoveStop);
             if (!anyMonsterActing)
             {
-                float moveDelta = moveSpeedMultiplier * Time.deltaTime;
+                float moveDelta = front.MoveSpeed * Time.deltaTime;
                 transform.Translate(Vector3.left * moveDelta);
             }
         }
@@ -92,20 +92,21 @@ public class Swarm : MonoBehaviour
 
     public Monster GetFrontMonster()
     {
-        if (_cachedFrontMonster != null && _cachedFrontMonster.gameObject.activeInHierarchy) 
-            return _cachedFrontMonster;
-
-        float minX = float.MaxValue;
-        _cachedFrontMonster = null;
-
-        foreach (var monster in _monsters)
+        // 캐싱된 몬스터가 없거나 비활성화된 경우 새로 찾기
+        if (_cachedFrontMonster == null || !_cachedFrontMonster.gameObject.activeInHierarchy)
         {
-            if (monster == null) continue;
-            float localX = monster.transform.localPosition.x;
-            if (localX < minX)
+            float minX = float.MaxValue;
+            _cachedFrontMonster = null;
+
+            foreach (var monster in _monsters)
             {
-                minX = localX;
-                _cachedFrontMonster = monster;
+                if (monster == null) continue;
+                float worldX = monster.transform.position.x;
+                if (worldX < minX)
+                {
+                    minX = worldX;
+                    _cachedFrontMonster = monster;
+                }
             }
         }
         return _cachedFrontMonster;
@@ -113,10 +114,8 @@ public class Swarm : MonoBehaviour
 
     public bool AttackInRange(float playerX, float range, int damage, bool isCrit = false)
     {
-        bool hitAny = false;
         float threshold = playerX + range;
-
-        Monster targetMonster = null;
+        Monster target = null;
         float minTargetX = float.MaxValue;
 
         foreach (var monster in _monsters)
@@ -126,16 +125,17 @@ public class Swarm : MonoBehaviour
             if (mX <= threshold && mX < minTargetX)
             {
                 minTargetX = mX;
-                targetMonster = monster;
+                target = monster;
             }
         }
 
-        if (targetMonster != null)
+        if (target != null)
         {
-            targetMonster.TakeDamage(damage, isCrit);
-            hitAny = true;
+            target.TakeDamage(damage, isCrit);
+            return true;
         }
 
+        // 상자 등 기타 IDamageable 탐색
         Collider2D[] others = Physics2D.OverlapCircleAll(new Vector2(playerX + range * 0.5f, 0), range);
         foreach (var col in others)
         {
@@ -143,11 +143,11 @@ public class Swarm : MonoBehaviour
             {
                 if (damageable is Monster || damageable is PlayerUnit) continue;
                 damageable.TakeDamage(damage, isCrit);
-                hitAny = true;
+                return true;
             }
         }
 
-        return hitAny;
+        return false;
     }
 
     public void Knockback(float distance, float duration)
