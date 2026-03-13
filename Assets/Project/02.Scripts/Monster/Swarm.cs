@@ -7,136 +7,151 @@ public class Swarm : MonoBehaviour
 {
     public event Action OnCleared;
     private readonly List<Monster> _monsters = new();
+    private Monster _cachedFrontMonster;
 
     [Header("Settings")]
     [SerializeField] private float stopDistance = 0.5f;
+    [SerializeField] private float moveSpeedMultiplier = 1.0f;
 
     public bool IsCleared => _monsters.Count == 0;
+    private bool _isMoveStop;
+    private bool _isForcedStop; 
 
-    /// <summary>
-    /// 다양한 종류가 섞인 몬스터 군집을 생성합니다.
-    /// </summary>
+    public void SetMoveStop(bool stop)
+    {
+        _isForcedStop = stop;
+    }
+
     public void SpawnMixed(Monster[] prefabs, Vector3 offset, float spacingX, int floorCount = 0)
     {
         Clear();
         if (prefabs == null || prefabs.Length == 0) return;
 
-        int count = prefabs.Length;
-        float startX = -(count - 1) * spacingX * 0.5f;
+        float startX = -(prefabs.Length - 1) * spacingX * 0.5f;
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < prefabs.Length; i++)
         {
-            Monster prefab = prefabs[i];
-            if (prefab == null) continue;
-
-            Monster monster = Instantiate(prefab, transform);
-            
+            if (prefabs[i] == null) continue;
+            Monster monster = Instantiate(prefabs[i], transform);
             Vector3 spawnPos = offset;
             spawnPos.x += startX + (i * spacingX);
             monster.transform.localPosition = spawnPos;
             
-            monster.IsMoveStop = true;
             monster.MySwarm = this;
             monster.OnDie += HandleMonsterDie;
-            
-            // 층수에 따른 난이도 보정 적용
             monster.SetDifficulty(floorCount);
-            
             _monsters.Add(monster);
         }
+        _cachedFrontMonster = null;
+    }
+
+    public void AddMonster(Monster monster)
+    {
+        if (monster == null) return;
+        monster.transform.SetParent(transform);
+        monster.MySwarm = this;
+        monster.OnDie += HandleMonsterDie;
+        _monsters.Add(monster);
+        _cachedFrontMonster = null;
     }
 
     private void HandleMonsterDie(Monster monster)
     {
+        if (_cachedFrontMonster == monster) _cachedFrontMonster = null;
         _monsters.Remove(monster);
         if (IsCleared) OnCleared?.Invoke();
     }
 
     private void Update()
     {
-        if (StageManager.Instance == null || StageManager.Instance.CurrentSwarm != this)
-        {
-            SetMoveStop(true);
-            return;
-        }
+        if (StageManager.Instance == null || StageManager.Instance.CurrentSwarm != this) return;
+        if (_isForcedStop) return;
 
         PlayerUnit player = PlayerUnit.Instance;
-        if (player == null || player.IsTransitioning)
+        if (player == null || player.IsTransitioning) return;
+
+        Monster front = GetFrontMonster();
+        if (front == null) return;
+
+        float distance = front.transform.position.x - player.transform.position.x;
+        _isMoveStop = (distance <= stopDistance);
+
+        if (!_isMoveStop)
         {
-            SetMoveStop(true);
-            return;
+            bool anyMonsterActing = _monsters.Exists(m => m != null && m.IsMoveStop);
+            if (!anyMonsterActing)
+            {
+                float moveDelta = moveSpeedMultiplier * Time.deltaTime;
+                transform.Translate(Vector3.left * moveDelta);
+            }
         }
-
-        Monster frontMonster = GetFrontMonster();
-        if (frontMonster == null) return;
-
-        float distance = frontMonster.transform.position.x - player.transform.position.x;
-        SetMoveStop(distance <= stopDistance);
     }
 
     public Monster GetFrontMonster()
     {
-        Monster frontMonster = null;
+        if (_cachedFrontMonster != null && _cachedFrontMonster.gameObject.activeInHierarchy) 
+            return _cachedFrontMonster;
+
         float minX = float.MaxValue;
+        _cachedFrontMonster = null;
 
         foreach (var monster in _monsters)
         {
             if (monster == null) continue;
-            if (monster.transform.localPosition.x < minX)
+            float localX = monster.transform.localPosition.x;
+            if (localX < minX)
             {
-                minX = monster.transform.localPosition.x;
-                frontMonster = monster;
+                minX = localX;
+                _cachedFrontMonster = monster;
             }
         }
-        return frontMonster;
+        return _cachedFrontMonster;
     }
 
-    public bool AttackInRange(float playerX, float range, int damage, bool damageAll = false)
+    public bool AttackInRange(float playerX, float range, int damage, bool isCrit = false)
     {
-        if (IsCleared) return false;
+        bool hitAny = false;
+        float threshold = playerX + range;
 
-        float attackThreshold = playerX + range;
-        List<Monster> targets = _monsters.FindAll(m => m != null && m.transform.position.x <= attackThreshold);
+        // 1. 몬스터 타격
+        Monster targetMonster = null;
+        float minTargetX = float.MaxValue;
 
-        if (targets.Count == 0) return false;
-
-        targets.Sort((a, b) => a.transform.position.x.CompareTo(b.transform.position.x));
-
-        if (damageAll)
-        {
-            foreach (var target in targets) target.TakeDamage(damage);
-        }
-        else
-        {
-            targets[0].TakeDamage(damage);
-        }
-        
-        return true;
-    }
-
-    public void SetMoveStop(bool stop)
-    {
         foreach (var monster in _monsters)
         {
-            if (monster != null) monster.IsMoveStop = stop;
-        }
-    }
-
-    public void Clear()
-    {
-        foreach (var monster in _monsters)
-        {
-            if (monster != null)
+            if (monster == null) continue;
+            float mX = monster.transform.position.x;
+            if (mX <= threshold && mX < minTargetX)
             {
-                monster.OnDie -= HandleMonsterDie;
-                Destroy(monster.gameObject);
+                minTargetX = mX;
+                targetMonster = monster;
             }
         }
-        _monsters.Clear();
+
+        if (targetMonster != null)
+        {
+            targetMonster.TakeDamage(damage, isCrit);
+            hitAny = true;
+        }
+
+        // 2. 상자 등 기타 오브젝트 타격 복구 (물리 연산 사용)
+        Collider2D[] others = Physics2D.OverlapCircleAll(new Vector2(playerX + range * 0.5f, 0), range);
+        foreach (var col in others)
+        {
+            if (col.TryGetComponent<IDamageable>(out var damageable))
+            {
+                if (damageable is Monster || damageable is PlayerUnit) continue;
+                damageable.TakeDamage(damage, isCrit);
+                hitAny = true;
+            }
+        }
+
+        return hitAny;
     }
 
     public void Knockback(float distance, float duration)
     {
+        StopAllCoroutines();
         StartCoroutine(KnockbackCoroutine(distance, duration));
     }
 
@@ -145,7 +160,6 @@ public class Swarm : MonoBehaviour
         float elapsed = 0f;
         Vector3 startPos = transform.localPosition;
         Vector3 targetPos = startPos + Vector3.right * distance;
-
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
@@ -155,5 +169,15 @@ public class Swarm : MonoBehaviour
             yield return null;
         }
         transform.localPosition = targetPos;
+    }
+
+    public void Clear()
+    {
+        foreach (var monster in _monsters)
+        {
+            if (monster != null) Destroy(monster.gameObject);
+        }
+        _monsters.Clear();
+        _cachedFrontMonster = null;
     }
 }

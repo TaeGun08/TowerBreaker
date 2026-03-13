@@ -8,9 +8,9 @@ public class StageManager : SingletonBase<StageManager>
     public event Action OnGameClear; 
 
     [Header("Game State")]
-    [field: SerializeField] public int StageCount { get; private set; } = 1; 
+    [field: SerializeField] public int StageCount { get; private set; } = 0; 
     [SerializeField] private int maxStageCount = 100;
-    [SerializeField] private float autoProceedDelay = 1.5f; // 클리어 후 자동 진행 대기 시간
+    [SerializeField] private float autoProceedDelay = 0.8f; // 대기 시간 단축
     
     public bool IsTransitioning { get; private set; }
 
@@ -41,14 +41,12 @@ public class StageManager : SingletonBase<StageManager>
 
     private void HandleSwarmCleared()
     {
-        if (StageCount >= maxStageCount)
+        if (StageCount >= maxStageCount - 1)
         {
-            Debug.Log("<color=green>Congratulations! All Stages Cleared!</color>");
             OnGameClear?.Invoke();
             return;
         }
         
-        // 터치를 기다리지 않고 자동으로 다음 층으로 이동하는 코루틴 시작
         if (!IsTransitioning)
         {
             StartCoroutine(AutoProceedToNextFloor());
@@ -58,50 +56,50 @@ public class StageManager : SingletonBase<StageManager>
     private IEnumerator AutoProceedToNextFloor()
     {
         IsTransitioning = true;
-
-        // 1. 적 전멸 후 잠시 대기 (승리의 여운, 아이템 드롭 확인 등)
+        
+        // 1. 적 처치 후 아주 짧게 대기
         yield return new WaitForSeconds(autoProceedDelay);
 
-        // 2. 플레이어 자동 퇴장 연출
+        // 2. 플레이어 퇴장 연출
         if (PlayerUnit.Instance != null)
         {
-            // 플레이어 퇴장이 완료될 때까지 대기하기 위해 콜백 사용
             bool playerMoved = false;
-            PlayerUnit.Instance.MoveToNextFloorSequence(() => 
-            {
-                playerMoved = true;
-            });
-
+            PlayerUnit.Instance.MoveToNextFloorSequence(() => { playerMoved = true; });
             yield return new WaitUntil(() => playerMoved);
         }
 
-        // 3. 스테이지 스크롤 및 새로운 층 세팅
-        NextStage();
+        // 3. 내부 데이터 갱신 및 스크롤 시작
+        bool wasBoss = ((StageCount + 1) % 5 == 0); 
         
-        // 플레이어의 리스폰 연출은 StageSpawner/PlayerUnit 쪽 이벤트로 자연스럽게 이어지므로 
-        // 여기서 Transitioning을 바로 풀지 않고 PlayerUnit 쪽에서 완료 시 풀도록 위임하거나, 
-        // 맵 스크롤 시간만큼 대기 후 해제합니다.
+        // NextStage() 내부에서 OnStageProgress가 발생하고, StageSpawner가 이를 받아 스크롤을 시작함
+        NextStage(wasBoss);
         
-        // 스테이지 스크롤 연출 시간 대기 (StageSpawner의 scroll duration과 맞춤)
-        yield return new WaitForSeconds(0.4f); 
+        // 4. 스탯 보상 (보스 아닐 때만)
+        if (!wasBoss && PlayerUnit.Instance != null)
+        {
+            string msg = PlayerUnit.Instance.UpgradeRandomStat();
+            if (InGameUIManager.Instance != null) InGameUIManager.Instance.ShowUpgradeNotice(msg);
+        }
+        
+        // 5. 스크롤 연출 완료 대기 (StageScroller와 시간 맞춤)
+        yield return new WaitForSeconds(0.5f); 
         
         IsTransitioning = false;
     }
 
-    public void NextStage()
+    public void NextStage(bool wasBoss = false)
     {
-        if (StageCount < maxStageCount)
+        if (StageCount < maxStageCount - 1)
         {
             StageCount++;
             OnStageProgress?.Invoke();
-            Debug.Log($"<color=white>Entered Floor {StageCount}</color>");
+            Debug.Log($"<color=white>Entered Floor {StageCount + 1}</color>");
         }
     }
 
-    #region Combat Effects (Juice)
-
     public void TriggerHitStop(float duration)
     {
+        if (!gameObject.activeInHierarchy) return;
         StartCoroutine(HitStopCoroutine(duration));
     }
 
@@ -112,6 +110,4 @@ public class StageManager : SingletonBase<StageManager>
         yield return new WaitForSecondsRealtime(duration);
         Time.timeScale = originalScale;
     }
-
-    #endregion
 }

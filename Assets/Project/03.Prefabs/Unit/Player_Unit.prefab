@@ -4777,6 +4777,7 @@ GameObject:
   - component: {fileID: 3332883280019017688}
   - component: {fileID: 3893793136243070305}
   - component: {fileID: 8458378482161311510}
+  - component: {fileID: 7576624303881847689}
   - component: {fileID: 8900768307157443573}
   - component: {fileID: 8903768881616969508}
   m_Layer: 3
@@ -4866,6 +4867,26 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &7576624303881847689
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2880519083822535508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c0eeb6130886674b9d4985ee01777ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStatsController
+  baseStats:
+    maxHp: 100
+    defense: 5
+    baseDamage: 10
+    critChance: 0.1
+    critDamageMultiplier: 2
+    doubleHitChance: 0.05
+    secondHitDamageRatio: 0.5
 --- !u!114 &8900768307157443573
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4880,28 +4901,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerUnit
   dontDestroy: 0
   animator: {fileID: 5657525929778947844}
-  attackEffectPrefab: {fileID: 3042519775331041172, guid: 841004c4c6a39e244abe2257394de913, type: 3}
+  attackEffectPrefab: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
   dashEffectPrefab: {fileID: 500345726442012828, guid: 50a810bfd70577b41a2d43ae0241ea2d, type: 3}
   guardEffectPrefab: {fileID: 3022102558446658867, guid: cd3d579a2d65b3241a1812f639db37ec, type: 3}
   effectYOffset: 0.25
-  baseStats:
-    maxHp: 100
-    defense: 5
-    baseDamage: 1
-    critChance: 0.1
-    critDamageMultiplier: 1.5
-    doubleHitChance: 0.05
-    secondHitDamageRatio: 0.5
-  dashDistance: 1
-  dashDuration: 0.1
-  dashStopThreshold: 0.8
-  startPosition: {x: -1.4, y: -0.1, z: 0}
   attackRange: 0.8
   attackCooldown: 0.3
-  guardRange: 0.8
   guardDuration: 0.3
   guardPushDistance: 0.8
-  playerKnockbackDistance: 0.3
+  playerGuardRecoil: 0.3
+  dashDistance: 0.8
+  dashStopThreshold: 0.8
+  startPosition: {x: -1.4, y: -0.1, z: 0}
+  contactDamageRange: 0.5
+  contactDamageInterval: 1
+  contactDamage: 5
 --- !u!114 &8903768881616969508
 MonoBehaviour:
   m_ObjectHideFlags: 0

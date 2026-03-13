@@ -10,23 +10,23 @@ public class Boss_DarkKnight : Monster
     [SerializeField] private int slashDamage = 25;
 
     private bool _isPatternRunning = false;
+    private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
 
-    protected override void Update()
+    protected virtual void Update()
     {
         // 현재 활성화된 군집이 아니면 행동 중지
-        if (!IsActiveSwarm())
+        if (!IsInActiveSwarm())
         {
             IsMoveStop = true;
             return;
         }
 
-        base.Update();
+        // Monster.Update()는 이제 존재하지 않으므로 호출하지 않음 (Swarm에서 처리)
 
         if (!_isPatternRunning && PlayerUnit.Instance != null)
         {
-            float dist = Vector2.Distance(transform.position, PlayerUnit.Instance.transform.position);
-            // 일정 거리 안으로 들어오면 패턴 시작
-            if (dist < 6.0f)
+            float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
+            if (sqrDist < 36.0f)
             {
                 StartCoroutine(PatternCycle());
             }
@@ -37,11 +37,10 @@ public class Boss_DarkKnight : Monster
     {
         _isPatternRunning = true;
 
-        while (true)
+        while (IsInActiveSwarm())
         {
             yield return new WaitForSeconds(3.0f);
 
-            // 플레이어가 연출 중이면 대기
             if (PlayerUnit.Instance != null && PlayerUnit.Instance.IsTransitioning)
             {
                 continue;
@@ -51,14 +50,14 @@ public class Boss_DarkKnight : Monster
             if (rand == 0) yield return Pattern_DashAttack();
             else yield return Pattern_WideSlash();
         }
+        _isPatternRunning = false;
     }
 
     private IEnumerator Pattern_DashAttack()
     {
-        Debug.Log("Dark Knight: Charge!");
-        IsMoveStop = true; // 일반 이동 중단
+        IsMoveStop = true; 
+        if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         
-        // 돌진 준비 연출 (살짝 뒤로 갔다가)
         Vector3 startPos = transform.position;
         Vector3 backPos = startPos + Vector3.right * 0.5f;
         
@@ -70,7 +69,6 @@ public class Boss_DarkKnight : Monster
             yield return null;
         }
 
-        // 앞으로 돌진!
         Vector3 dashTarget = transform.position + Vector3.left * dashDistance;
         t = 0;
         while (t < 1)
@@ -78,15 +76,13 @@ public class Boss_DarkKnight : Monster
             t += Time.deltaTime * dashSpeed;
             transform.position = Vector3.Lerp(backPos, dashTarget, t);
             
-            // 돌진 중 플레이어 타격 체크
             if (PlayerUnit.Instance != null)
             {
-                float d = Vector2.Distance(transform.position, PlayerUnit.Instance.transform.position);
-                if (d < 0.8f)
+                float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
+                if (sqrDist < 0.64f)
                 {
-                    Debug.Log("Dark Knight: Crushed you!");
-                    CameraManager.Instance.Shake(0.3f, 0.2f);
-                    // 플레이어 넉백 연출은 나중에 PlayerUnit에 추가 가능
+                    PlayerUnit.Instance.TakeDamage(slashDamage);
+                    if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.3f, 0.2f);
                     break;
                 }
             }
@@ -98,21 +94,18 @@ public class Boss_DarkKnight : Monster
 
     private IEnumerator Pattern_WideSlash()
     {
-        Debug.Log("Dark Knight: Perish!");
         IsMoveStop = true;
-
-        // 베기 예고 연출 (기 모으기)
+        if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         yield return new WaitForSeconds(0.8f);
 
-        // 넓은 범위 타격
         if (PlayerUnit.Instance != null)
         {
-            float d = Vector2.Distance(transform.position, PlayerUnit.Instance.transform.position);
-            if (d <= slashRange)
+            float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
+            if (sqrDist <= slashRange * slashRange)
             {
-                Debug.Log("Player hit by wide slash!");
-                CameraManager.Instance.Shake(0.2f, 0.1f);
-                StageManager.Instance.TriggerHitStop(0.1f);
+                PlayerUnit.Instance.TakeDamage(slashDamage);
+                if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.2f, 0.1f);
+                if (StageManager.Instance != null) StageManager.Instance.TriggerHitStop(0.1f);
             }
         }
 

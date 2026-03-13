@@ -30,7 +30,6 @@ public class MonsterSpawner : MonoBehaviour
     {
         if (bossPrefabs == null || bossPrefabs.Length == 0) return;
         Monster selectedBoss = bossPrefabs[Random.Range(0, bossPrefabs.Length)];
-        // 층수 정보 전달
         swarm.SpawnMixed(new[] { selectedBoss }, spawnOffset, 0, floorCount);
     }
 
@@ -38,6 +37,7 @@ public class MonsterSpawner : MonoBehaviour
     {
         if (commonMonsterPrefab == null) return;
 
+        // 0부터 시작하므로 floorCount / 10이 10스테이지 클리어마다의 보너스
         int bonusCount = floorCount / 10;
         int totalCount = Random.Range(baseMinCount, baseMaxCount + bonusCount + 1);
 
@@ -50,7 +50,6 @@ public class MonsterSpawner : MonoBehaviour
                 prefabsToSpawn[i] = commonMonsterPrefab;
         }
 
-        // 층수 정보 전달
         swarm.SpawnMixed(prefabsToSpawn, spawnOffset, spacingX, floorCount);
     }
 
@@ -64,6 +63,9 @@ public class MonsterSpawner : MonoBehaviour
             swarmObj.transform.localPosition = Vector3.zero;
             return swarmObj.AddComponent<Swarm>();
         }
+        
+        // [버그 수정]: 재사용되는 발판의 경우, 이전 층에서의 넉백 위치를 초기화
+        swarmTransform.localPosition = Vector3.zero;
         return swarmTransform.GetComponent<Swarm>();
     }
 

@@ -21,7 +21,13 @@ public class Projectile : MonoBehaviour
 
     private void Start()
     {
+        if (ProjectileManager.Instance != null) ProjectileManager.Instance.Register(this);
         Destroy(gameObject, lifetime);
+    }
+
+    private void OnDestroy()
+    {
+        if (ProjectileManager.Instance != null) ProjectileManager.Instance.Unregister(this);
     }
 
     private void Update()
@@ -32,12 +38,13 @@ public class Projectile : MonoBehaviour
         
         if (PlayerUnit.Instance != null && !PlayerUnit.Instance.IsTransitioning)
         {
-            float dist = Vector2.Distance(transform.position, PlayerUnit.Instance.transform.position);
+            // 최적화: Vector2.Distance(제곱근 포함) 대신 sqrMagnitude 사용
+            float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
             
-            // 피격 판정 축소 (0.6f -> 0.3f)
-            if (dist < 0.3f)
+            // 0.3f 의 제곱은 0.09f
+            if (sqrDist < 0.09f)
             {
-                if (PlayerUnit.Instance.IsActionActive())
+                if (PlayerUnit.Instance.IsActionActive)
                 {
                     Deflect("Blocked/Dashed");
                 }
@@ -55,7 +62,6 @@ public class Projectile : MonoBehaviour
         if (_isDeflected) return;
         _isDeflected = true;
 
-        // 튕겨나갈 때 플레이어에게 알림 (이펙트 생성 등을 위해)
         if (PlayerUnit.Instance != null)
         {
             PlayerUnit.Instance.OnDeflectSuccess(transform.position);

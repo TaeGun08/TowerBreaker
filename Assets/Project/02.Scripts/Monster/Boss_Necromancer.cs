@@ -7,41 +7,18 @@ public class Boss_Necromancer : Monster
     [SerializeField] private Monster minionPrefab;
     [SerializeField] private AreaEffect magicCirclePrefab;
     [SerializeField] private float patternInterval = 3.0f;
-    [SerializeField] private float maintainDistance = 4.0f;
 
-    private bool _isPatternRunning = false;
+    private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
+    private bool _isPatternRunning;
 
     protected override void Awake()
     {
         base.Awake();
     }
 
-    protected override void Update()
+    private void Update()
     {
-        if (PlayerUnit.Instance == null) return;
-
-        // 현재 활성화된 군집이 아니면 행동 중지
-        if (!IsActiveSwarm())
-        {
-            IsMoveStop = true;
-            return;
-        }
-
-        if (IsMoveStop) return;
-
-        float dist = Vector2.Distance(transform.position, PlayerUnit.Instance.transform.position);
-
-        // 일정 거리를 유지하려고 시도 (너무 가까우면 멈춤)
-        if (dist <= maintainDistance)
-        {
-            IsMoveStop = true;
-        }
-        else
-        {
-            IsMoveStop = false;
-        }
-
-        base.Update();
+        if (PlayerUnit.Instance == null || !IsInActiveSwarm()) return;
 
         if (!_isPatternRunning)
         {
@@ -54,49 +31,56 @@ public class Boss_Necromancer : Monster
         _isPatternRunning = true;
         yield return new WaitForSeconds(patternInterval);
 
-        while (true)
+        while (IsInActiveSwarm() && PlayerUnit.Instance != null)
         {
-            // 플레이어가 연출 중이면 대기
-            if (PlayerUnit.Instance != null && PlayerUnit.Instance.IsTransitioning)
+            if (PlayerUnit.Instance.IsTransitioning)
             {
                 yield return null;
                 continue;
             }
 
-            // 패턴 랜덤 선택
             int rand = Random.Range(0, 2);
             if (rand == 0) yield return Pattern_Summon();
             else yield return Pattern_CastMagic();
 
             yield return new WaitForSeconds(patternInterval);
         }
+        _isPatternRunning = false;
     }
 
     private IEnumerator Pattern_Summon()
     {
-        Debug.Log("Boss: Rise, my servants!");
-        // 보스 주변에 쫄개 2마리 소환
-        for (int i = 0; i < 2; i++)
+        if (animator != null) animator.SetTrigger(AnimAttackTrigger);
+        yield return new WaitForSeconds(0.5f);
+
+        for (int i = 0; i < 3; i++)
         {
-            if (minionPrefab != null)
+            if (minionPrefab != null && MySwarm != null)
             {
-                Vector3 spawnPos = transform.position + new Vector3(Random.Range(-1f, 1f), 0, 0);
+                // 보스 뒤쪽(오른쪽)에서 소환되어 다가오도록 복구
+                float spawnX = transform.position.x + 1.5f + Random.Range(0f, 1.0f);
+                Vector3 spawnPos = new Vector3(spawnX, transform.position.y, 0);
+                
                 Monster minion = Instantiate(minionPrefab, spawnPos, Quaternion.identity);
-                // 소환된 하수인은 보스보다 앞에 서게 함
+                minion.SetDifficulty(currentFloorCount);
+                
+                // 군집에 추가하여 함께 이동 제어 받도록 함
+                MySwarm.AddMonster(minion);
             }
         }
-        yield return new WaitForSeconds(1.0f);
+        yield return new WaitForSeconds(0.5f);
     }
 
     private IEnumerator Pattern_CastMagic()
     {
-        Debug.Log("Boss: Death comes for you!");
+        if (animator != null) animator.SetTrigger(AnimAttackTrigger);
+        yield return new WaitForSeconds(0.5f);
+
         if (magicCirclePrefab != null && PlayerUnit.Instance != null)
         {
-            // 플레이어 발밑에 장판 생성
             Vector3 targetPos = PlayerUnit.Instance.transform.position;
             Instantiate(magicCirclePrefab, targetPos, Quaternion.identity);
         }
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(1.0f);
     }
 }

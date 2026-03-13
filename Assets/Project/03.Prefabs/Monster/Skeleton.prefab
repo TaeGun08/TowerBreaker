@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8733776180521299198}
   - component: {fileID: 5232547619596822455}
+  - component: {fileID: 4620254168090641645}
   m_Layer: 0
   m_Name: Skeleton
   m_TagString: Untagged
@@ -46,7 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Normal
   type: 0
-  hp: 1
+  hp: 10
   moveSpeed: 0.25
   corpse:
   - {fileID: 2867822263615455249, guid: 6395501f0c7747c478fdd24f1cd1a9b2, type: 3}
@@ -55,6 +56,18 @@ MonoBehaviour:
   - {fileID: 8873149249959205514, guid: fbcde91653028c64db305f6fada66439, type: 3}
   - {fileID: -9029838754324041997, guid: 407918eb18f996f409916c44322d3437, type: 3}
   - {fileID: -8854219391508959043, guid: ab7a9e67eae26844ca3070a42bb5781d, type: 3}
+--- !u!114 &4620254168090641645
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2841075190206568082}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcb82d80f64297f48929af731c627e32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VisualFeedback
 --- !u!1001 &7583528814964963337
 PrefabInstance:
   m_ObjectHideFlags: 0

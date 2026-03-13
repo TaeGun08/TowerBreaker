@@ -47,9 +47,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShieldBearer
   type: 0
-  hp: 2
+  hp: 10
   moveSpeed: 0.25
-  corpse: []
+  corpse:
+  - {fileID: 2867822263615455249, guid: 6395501f0c7747c478fdd24f1cd1a9b2, type: 3}
+  - {fileID: 3122909735810564470, guid: 6bae6b7f58474274d8e93ab767396656, type: 3}
+  - {fileID: 353622973137351898, guid: 1f50a91630076b64e94971c844df6301, type: 3}
+  - {fileID: 8873149249959205514, guid: fbcde91653028c64db305f6fada66439, type: 3}
+  - {fileID: -9029838754324041997, guid: 407918eb18f996f409916c44322d3437, type: 3}
+  - {fileID: -8854219391508959043, guid: ab7a9e67eae26844ca3070a42bb5781d, type: 3}
   damageReduction: 0.5
   blockChance: 0.2
 --- !u!114 &5069147104308591696

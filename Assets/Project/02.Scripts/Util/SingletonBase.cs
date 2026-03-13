@@ -5,6 +5,7 @@ public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
     private static T _instance;
     private static readonly object _lock = new object();
     private static bool _applicationIsQuitting = false;
+    public static bool IsQuitting => _applicationIsQuitting;
 
     [Header("Singleton Settings")]
     [SerializeField] protected bool dontDestroy = true;

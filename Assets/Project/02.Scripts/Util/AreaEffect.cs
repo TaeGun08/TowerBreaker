@@ -33,8 +33,15 @@ public class AreaEffect : MonoBehaviour
             if (dist <= damageRadius)
             {
                 Debug.Log("<color=red>Player caught in explosion!</color>");
-                CameraManager.Instance.Shake(0.2f, 0.15f);
-                StageManager.Instance.TriggerHitStop(0.05f);
+                // TakeDamage에서 가드 여부를 체크하므로, 가드 중이면 데미지를 입지 않습니다.
+                PlayerUnit.Instance.TakeDamage(damage); 
+                
+                // 플레이어가 가드 중이 아닐 때만 강한 흔들림과 히트스탑 적용
+                if (!PlayerUnit.Instance.IsActionActive) // 가드나 대쉬 중이 아닐 때
+                {
+                    CameraManager.Instance.Shake(0.2f, 0.15f);
+                    StageManager.Instance.TriggerHitStop(0.05f);
+                }
             }
         }
 
