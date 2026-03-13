@@ -214,15 +214,15 @@ MonoBehaviour:
   eliteMonsterPrefabs:
   - {fileID: -5270815164970608620, guid: 3d33fbc4f8456b641910a97d78188337, type: 3}
   - {fileID: 8344725986202278574, guid: 14b8fe849e946794ab7ea821f3097f7a, type: 3}
-  eliteSpawnChance: 0.2
+  eliteSpawnChance: 0.1
   bossPrefabs:
   - {fileID: -5459475695085980695, guid: 26989dccdab3cf34b887350e5e8f3335, type: 3}
   - {fileID: 3910913239838174930, guid: 0cd0305246d58244eb6e64b543735172, type: 3}
   bossFloorInterval: 5
   spawnOffset: {x: 2, y: 0.9, z: 0}
   spacingX: 0.3
-  baseMinCount: 10
-  baseMaxCount: 10
+  baseMinCount: 1
+  baseMaxCount: 1
 --- !u!4 &131616320
 Transform:
   m_ObjectHideFlags: 0

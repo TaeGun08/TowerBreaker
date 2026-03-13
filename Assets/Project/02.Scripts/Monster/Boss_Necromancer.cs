@@ -18,27 +18,13 @@ public class Boss_Necromancer : Monster
 
     protected override void Update()
     {
-        // 1. 기본 이동 로직 (부모 Monster.Update 사용)
         base.Update();
 
         if (PlayerUnit.Instance == null || !IsInActiveSwarm()) return;
 
-        // 2. 패턴 사이클 관리
         if (!_isPatternRunning)
         {
             StartCoroutine(PatternCycle());
-        }
-    }
-
-    protected override void HandleMovement()
-    {
-        // 네크로맨서는 멀리서 마법을 써야 하므로 정지 거리를 멀게 설정 (3.5f)
-        float stopDist = 3.5f;
-        float distance = transform.position.x - PlayerUnit.Instance.transform.position.x;
-
-        if (distance > stopDist)
-        {
-            transform.Translate(Vector3.left * (moveSpeed * Time.deltaTime));
         }
     }
 
@@ -69,12 +55,10 @@ public class Boss_Necromancer : Monster
         if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         yield return new WaitForSeconds(0.5f);
 
-        // 소환 개수를 2개로 줄여 밸런스 조정
         for (int i = 0; i < 2; i++)
         {
             if (minionPrefab != null && MySwarm != null)
             {
-                // 보스 뒤쪽에서 소환
                 float spawnX = transform.position.x + 1.0f + Random.Range(0f, 1.0f);
                 Vector3 spawnPos = new Vector3(spawnX, transform.position.y, 0);
                 
@@ -94,7 +78,6 @@ public class Boss_Necromancer : Monster
         if (magicCirclePrefab != null && PlayerUnit.Instance != null)
         {
             Vector3 targetPos = PlayerUnit.Instance.transform.position;
-            // 플레이어 발밑에 마법 생성
             Instantiate(magicCirclePrefab, targetPos, Quaternion.identity);
         }
         yield return new WaitForSeconds(1.0f);

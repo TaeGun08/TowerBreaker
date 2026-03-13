@@ -51,7 +51,7 @@ public class Projectile : MonoBehaviour
                 }
                 else
                 {
-                    PlayerUnit.Instance.TakeDamage(damage);
+                    PlayerUnit.Instance.TakeDamage(damage, isProjectile: true);
                     DestroyProjectile("Hit Player");
                 }
             }

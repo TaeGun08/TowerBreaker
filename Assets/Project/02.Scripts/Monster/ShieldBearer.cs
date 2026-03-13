@@ -3,21 +3,24 @@ using UnityEngine;
 public class ShieldBearer : Monster
 {
     [Header("Shield Settings")]
-    [SerializeField] [Range(0, 1)] private float damageReduction = 0.5f; // 데미지 50% 감소
-    [SerializeField] private float blockChance = 0.3f; // 30% 확률로 완전 방어
+    [SerializeField] [Range(0, 1)] private float damageReduction = 0.5f; 
+    [SerializeField] private float blockChance = 0.2f; 
 
-    public override void TakeDamage(int damage, bool isCrit = false)
+    // 부모 Monster의 변경된 TakeDamage 시그니처와 일치하도록 수정
+    public override void TakeDamage(int damage, bool isCrit = false, bool isProjectile = false)
     {
-        // 확률적으로 완전 방어
+        // 1. 방패 막기 확률 체크 (완전 무시)
         if (Random.value < blockChance)
         {
-            Debug.Log($"{gameObject.name} blocked the attack!");
+            if (InGameUIManager.Instance != null)
+                InGameUIManager.Instance.SpawnDamageText(transform.position, 0, false);
+            
             if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.03f, 0.05f);
             return;
         }
 
-        // 데미지 감소 적용
+        // 2. 데미지 감소 적용
         int reducedDamage = Mathf.RoundToInt(damage * (1f - damageReduction));
-        base.TakeDamage(reducedDamage, isCrit);
+        base.TakeDamage(reducedDamage, isCrit, isProjectile);
     }
 }

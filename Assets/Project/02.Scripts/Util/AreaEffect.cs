@@ -35,8 +35,8 @@ public class AreaEffect : MonoBehaviour
             float dist = Vector2.Distance(transform.position, PlayerUnit.Instance.transform.position);
             if (dist <= damageRadius)
             {
-                // [수정] TakeDamage 호출. 플레이어가 가드 중이면 내부에서 완전 방어됨.
-                PlayerUnit.Instance.TakeDamage(damage); 
+                // [수정] TakeDamage 호출 시 투사체/마법 판정임을 명시
+                PlayerUnit.Instance.TakeDamage(damage, isProjectile: true); 
                 
                 // 플레이어가 가드 중이 아닐 때만 강한 피드백
                 if (!PlayerUnit.Instance.IsActionActive)

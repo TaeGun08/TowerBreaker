@@ -7,23 +7,20 @@ public class Swarm : MonoBehaviour
 {
     public event Action OnCleared;
     private readonly List<Monster> _monsters = new();
-    private Monster _cachedFrontMonster;
-
+    
     [Header("Settings")]
-    [SerializeField] private float stopDistance = 0.7f; 
     [SerializeField] private float knockbackCooldown = 0.5f; 
 
     private float _lastKnockbackTime;
     private bool _isForcedStop; 
     
-    // 군집 전체 이동 가능 여부
-    public bool CanMove { get; private set; }
+    // [수정] 일반 미니언들의 이동 가능 여부
+    public bool CanMinionsMove { get; private set; }
     public bool IsCleared => _monsters.Count == 0;
 
     public void SetMoveStop(bool stop)
     {
         _isForcedStop = stop;
-        // 개별 몬스터들에게도 상태 전달
         foreach (var m in _monsters) if (m != null) m.IsMoveStop = stop;
     }
 
@@ -49,7 +46,6 @@ public class Swarm : MonoBehaviour
             monster.SetDifficulty(floorCount);
             _monsters.Add(monster);
         }
-        _cachedFrontMonster = null;
     }
 
     public void AddMonster(Monster monster)
@@ -59,12 +55,10 @@ public class Swarm : MonoBehaviour
         monster.MySwarm = this;
         monster.OnDie += HandleMonsterDie;
         _monsters.Add(monster);
-        _cachedFrontMonster = null;
     }
 
     private void HandleMonsterDie(Monster monster)
     {
-        if (_cachedFrontMonster == monster) _cachedFrontMonster = null;
         _monsters.Remove(monster);
         if (IsCleared) OnCleared?.Invoke();
     }
@@ -72,61 +66,54 @@ public class Swarm : MonoBehaviour
     private void Update()
     {
         if (StageManager.Instance == null || StageManager.Instance.CurrentSwarm != this) return;
-        if (_isForcedStop) 
+        if (_isForcedStop || PlayerUnit.Instance == null || PlayerUnit.Instance.IsTransitioning) 
         {
-            CanMove = false;
+            CanMinionsMove = false;
             return;
         }
 
-        PlayerUnit player = PlayerUnit.Instance;
-        if (player == null || player.IsTransitioning) 
+        // [핵심]: 일반 몬스터(Minion) 중 가장 앞에 있는 개체 찾기
+        Monster frontMinion = GetFrontMinion();
+        if (frontMinion == null) 
         {
-            CanMove = false;
+            CanMinionsMove = true; // 미니언이 없으면 멈출 이유 없음
             return;
         }
 
-        Monster front = GetFrontMonster();
-        if (front == null) 
-        {
-            CanMove = false;
-            return;
-        }
+        // 미니언 대열 정지 거리 체크 (0.7f)
+        float distance = frontMinion.transform.position.x - PlayerUnit.Instance.transform.position.x;
+        CanMinionsMove = (distance > 0.7f);
+    }
 
-        // 1. 맨 앞 개체와의 거리 체크
-        float distance = front.transform.position.x - player.transform.position.x;
-        
-        // 2. 전체 이동 가능 여부 결정 (맨 앞이 멈추면 다 멈춤)
-        CanMove = (distance > stopDistance);
+    private Monster GetFrontMinion()
+    {
+        float minX = float.MaxValue;
+        Monster front = null;
 
-        // 3. 특정 몬스터가 패턴 수행 중(IsMoveStop)이면 군집 전체 정지
-        if (CanMove)
+        foreach (var m in _monsters)
         {
-            if (_monsters.Exists(m => m != null && m.IsMoveStop))
+            if (m == null || m.Type == MonsterType.Boss) continue; // 보스는 대열 판정에서 제외
+            float worldX = m.transform.position.x;
+            if (worldX < minX)
             {
-                CanMove = false;
+                minX = worldX;
+                front = m;
             }
         }
+        return front;
     }
 
     public Monster GetFrontMonster()
     {
-        if (_cachedFrontMonster == null || !_cachedFrontMonster.gameObject.activeInHierarchy)
+        float minX = float.MaxValue;
+        Monster front = null;
+        foreach (var m in _monsters)
         {
-            float minX = float.MaxValue;
-            _cachedFrontMonster = null;
-
-            foreach (var monster in _monsters)
-            {
-                if (monster == null) continue;
-                float worldX = monster.transform.position.x;
-                if (worldX < minX)
-                {
-                    minX = worldX;
-                    _cachedFrontMonster = monster;
-                }
-            }
+            if (m == null) continue;
+            float worldX = m.transform.position.x;
+            if (worldX < minX) { minX = worldX; front = m; }
         }
-        return _cachedFrontMonster;
+        return front;
     }
 
     public bool AttackInRange(float playerX, float range, int damage, bool isCrit = false)
@@ -135,14 +122,14 @@ public class Swarm : MonoBehaviour
         Monster target = null;
         float minTargetX = float.MaxValue;
 
-        foreach (var monster in _monsters)
+        foreach (var m in _monsters)
         {
-            if (monster == null) continue;
-            float mX = monster.transform.position.x;
+            if (m == null) continue;
+            float mX = m.transform.position.x;
             if (mX <= threshold && mX < minTargetX)
             {
                 minTargetX = mX;
-                target = monster;
+                target = m;
             }
         }
 
@@ -162,7 +149,6 @@ public class Swarm : MonoBehaviour
                 return true;
             }
         }
-
         return false;
     }
 
@@ -200,6 +186,5 @@ public class Swarm : MonoBehaviour
             if (monster != null) Destroy(monster.gameObject);
         }
         _monsters.Clear();
-        _cachedFrontMonster = null;
     }
 }

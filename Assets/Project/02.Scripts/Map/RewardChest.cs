@@ -7,7 +7,8 @@ public class RewardChest : MonoBehaviour, IDamageable
     // IDamageable 인터페이스 구현
     public int CurrentHP => _isAbsorbed ? 0 : 1;
 
-    public void TakeDamage(int damage, bool isCrit = false)
+    // 인터페이스의 변경된 시그니처와 일치하도록 수정
+    public void TakeDamage(int damage, bool isCrit = false, bool isProjectile = false)
     {
         if (_isAbsorbed) return;
         StartAbsorb();

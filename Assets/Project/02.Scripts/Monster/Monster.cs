@@ -23,6 +23,10 @@ public abstract class Monster : MonoBehaviour, IDamageable
     public Swarm MySwarm { get; set; }
     public bool IsMoveStop { get; set; } 
     public float MoveSpeed => moveSpeed;
+    public MonsterType Type => type;
+
+    // 모든 몬스터의 개별 정지 거리 (0.7f로 통일)
+    public virtual float StopDistance => 0.7f;
 
     protected int currentFloorCount;
     private bool _isDead;
@@ -55,26 +59,29 @@ public abstract class Monster : MonoBehaviour, IDamageable
         if (PlayerUnit.Instance == null || !IsInActiveSwarm() || IsMoveStop || _isDead) return;
         if (PlayerUnit.Instance.IsTransitioning) return;
 
-        // 군집 전체가 이동 가능한 상태일 때만 개별 이동 수행 (복구 및 디벨롭)
-        if (MySwarm != null && MySwarm.CanMove)
+        if (type == MonsterType.Boss)
         {
             HandleMovement();
+        }
+        else
+        {
+            if (MySwarm != null && MySwarm.CanMinionsMove)
+            {
+                HandleMovement();
+            }
         }
     }
 
     protected virtual void HandleMovement()
     {
-        // 개별 정지 거리 체크 (군집이 움직이더라도 보스는 자신의 정지 거리를 지킴)
-        float stopDist = (type == MonsterType.Boss) ? 3.0f : 0.7f;
         float distance = transform.position.x - PlayerUnit.Instance.transform.position.x;
-
-        if (distance > stopDist)
+        if (distance > StopDistance)
         {
             transform.Translate(Vector3.left * (moveSpeed * Time.deltaTime));
         }
     }
 
-    public virtual void TakeDamage(int damage, bool isCrit = false)
+    public virtual void TakeDamage(int damage, bool isCrit = false, bool isProjectile = false)
     {
         if (_isDead) return;
 
@@ -96,8 +103,15 @@ public abstract class Monster : MonoBehaviour, IDamageable
 
         if (corpse != null)
         {
-            foreach (var corp in corpse)
-                if (corp != null) Instantiate(corp, transform.position, Quaternion.identity);
+            foreach (var corpPrefab in corpse)
+            {
+                if (corpPrefab != null)
+                {
+                    Corpse instance = Instantiate(corpPrefab, transform.position, Quaternion.identity);
+                    // 시체에게 원본 몬스터 타입 전달 (보상 판정용)
+                    instance.Setup(type);
+                }
+            }
         }
 
         OnDie?.Invoke(this);

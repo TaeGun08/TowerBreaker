@@ -95,23 +95,20 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     public string UpgradeRandomStat() => _statsController.UpgradeRandomStat();
 
-    public void TakeDamage(int damage, bool isCrit = false)
+    public void TakeDamage(int damage, bool isCrit = false, bool isProjectile = false)
     {
         if (IsInvulnerable || _isTransitioning) return;
 
         if (IsActionActive)
         {
-            ApplyBlockFeedback(isProjectile: false, isDashing: _isDashing);
+            // 방어 피드백 (투사체/마법 여부 전달)
+            ApplyBlockFeedback(isProjectile: isProjectile, isDashing: _isDashing);
             return;
         }
 
         _statsController.ApplyDamage(damage);
         if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.1f, 0.1f);
-        
-        // 어떤 동작(공격, 대쉬, 가드, 스킬)도 하지 않을 때만 피격 모션 재생
-        bool shouldPlayHitAnim = !(_isAttacking || _isDashing || _isGuarding || _isUsingSkill);
-        if (_feedback != null) _feedback.PlayHitEffect(canPlayAnimation: shouldPlayHitAnim);
-        
+        if (_feedback != null) _feedback.PlayHitEffect(canPlayAnimation: !IsActionActive);
         if (CurrentHP <= 0) Die();
     }
 
@@ -120,13 +117,12 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         TriggerCombatJuice(0.05f, 0.05f, 0.05f);
         OnDeflectSuccess(transform.position + Vector3.right * 0.2f);
 
-        // 대쉬 중이 아닐 때만 플레이어 리코일 발생 (대쉬 중 넉백 필요 없음 피드백 반영)
         if (!isDashing)
         {
             StartCoroutine(PlayerRecoilCoroutine());
         }
 
-        // 근접 공격(isProjectile = false)일 때만 적 군집 넉백
+        // [중요] 화살이나 마법(isProjectile)을 막았을 때는 적 보스나 군집을 밀어내지 않음
         if (!isProjectile)
         {
             StageManager.Instance?.CurrentSwarm?.Knockback(guardPushDistance, 0.2f);
@@ -160,6 +156,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         {
             if (_isGuarding)
             {
+                // 접촉 데미지는 근접 공격이므로 isProjectile = false
                 ApplyBlockFeedback(isProjectile: false, isDashing: false);
                 return; 
             }
@@ -168,7 +165,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             if (_contactDamageTimer >= contactDamageInterval)
             {
                 _contactDamageTimer = 0f;
-                TakeDamage(contactDamage);
+                TakeDamage(contactDamage, isProjectile: false);
             }
         }
         else _contactDamageTimer = 0f;
@@ -216,7 +213,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         {
             animator.SetTrigger(AnimAttackTrigger);
             
-            // [복구] 애니메이션 휘두르는 타이밍(normalizedTime) 체크 - 정교하게 복구
             float timeout = 0.5f;
             float elapsed = 0f;
             yield return null; 
@@ -224,7 +220,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             {
                 elapsed += Time.deltaTime;
                 var state = animator.GetCurrentAnimatorStateInfo(0);
-                // 공격 상태이거나 공격 상태로 전이 중인 경우 체크
                 if (state.IsName("Attack") || state.IsName("2_Attack")) 
                 {
                     if (state.normalizedTime >= 0.3f) break;
@@ -278,7 +273,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             
             if (DeflectProjectilesInRange(0.5f))
             {
-                // 대쉬 중 투사체 방어 시 플레이어 넉백 제외 (피드백 반영)
                 ApplyBlockFeedback(isProjectile: true, isDashing: true);
             }
 
