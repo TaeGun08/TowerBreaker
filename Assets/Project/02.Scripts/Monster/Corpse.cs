@@ -12,8 +12,8 @@ public class Corpse : MonoBehaviour
         _rigid = GetComponent<Rigidbody2D>();
         if (_rigid != null)
         {
-            _rigid.drag = 1.0f;
-            _rigid.angularDrag = 2.0f;
+            _rigid.linearDamping = 1.0f;
+            _rigid.angularDamping = 2.0f;
         }
     }
 
