@@ -28,6 +28,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     [Header("Movement Settings")]
     [SerializeField] private float dashDistance = 0.6f;
     [SerializeField] private float dashStopThreshold = 0.35f;
+    [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private Vector3 startPosition = new Vector3(-1.4f, -0.1f, 0f);
 
     [Header("Contact Damage (Dot)")]
@@ -40,7 +41,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     public PlayerStats Stats => _statsController.CurrentStats;
     public event Action<int, int> OnHealthChanged;
 
-    private bool _isDashing, _isAttacking, _isGuarding, _isTransitioning, _isUsingSkill;
+    private bool _isDashing, _isAttacking, _isGuarding, _isTransitioning, _isUsingSkill, _isDashCooldown;
     public bool IsTransitioning => _isTransitioning;
     public bool IsInvulnerable { get; set; }
     public bool IsActionActive => _isDashing || _isGuarding;
@@ -77,7 +78,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     private void LateUpdate()
     {
-        // 화면 밖으로 나가지 않도록 고정 (복구)
         if (!_isTransitioning) ClampPosition();
     }
 
@@ -101,6 +101,10 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         {
             TriggerCombatJuice(0.05f, 0.05f, 0.05f);
             OnDeflectSuccess(transform.position + Vector3.right * 0.2f);
+            
+            // 실제로 공격을 막았을 때만 적 군집 넉백 발생 (수정)
+            StageManager.Instance?.CurrentSwarm?.Knockback(guardPushDistance, 0.2f);
+            
             DeflectProjectilesInRange(attackRange);
             return;
         }
@@ -149,7 +153,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     #region Actions
 
     public void PerformAttack() { if (CanInput()) StartCoroutine(AttackCoroutine()); }
-    public void PerformDash() { if (CanInput()) StartCoroutine(DashCoroutine()); }
+    public void PerformDash() { if (CanInput() && !_isDashCooldown) StartCoroutine(DashCoroutine()); }
     public void PerformGuard() { if (CanInput()) StartCoroutine(GuardCoroutine()); }
 
     public void UseSkill(int index)
@@ -221,26 +225,31 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             elapsed += Time.deltaTime;
             Vector3 nextPos = Vector3.Lerp(startPos, targetPos, elapsed / duration);
             if (IsMonsterAhead(nextPos)) break; 
-            DeflectProjectilesInRange(0.5f);
+            
+            if (DeflectProjectilesInRange(0.5f))
+            {
+                StageManager.Instance?.CurrentSwarm?.Knockback(guardPushDistance * 0.5f, 0.2f);
+            }
+
             transform.position = nextPos;
             yield return null;
         }
         _isDashing = false;
+        StartCoroutine(DashCooldownCoroutine());
+    }
+
+    private IEnumerator DashCooldownCoroutine()
+    {
+        _isDashCooldown = true;
+        yield return new WaitForSeconds(dashCooldown);
+        _isDashCooldown = false;
     }
 
     private IEnumerator GuardCoroutine()
     {
         _isGuarding = true;
-        Swarm swarm = StageManager.Instance?.CurrentSwarm;
-        if (swarm != null)
-        {
-            Monster front = swarm.GetFrontMonster();
-            if (front != null && (front.transform.position.x - transform.position.x) <= attackRange)
-            {
-                OnDeflectSuccess(front.transform.position);
-                swarm.Knockback(guardPushDistance, 0.2f);
-            }
-        }
+        
+        // 가드 버튼을 누르자마자 발생하던 넉백 로직 제거 (수정)
 
         float elapsed = 0f;
         Vector3 startPos = transform.position;
@@ -252,7 +261,13 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             float t = elapsed / guardDuration;
             float ease = 1f - (1f - t) * (1f - t);
             transform.position = Vector3.Lerp(startPos, targetPos, ease);
-            DeflectProjectilesInRange(attackRange);
+            
+            // 가드 도중 투사체를 반사하면 넉백 발생
+            if (DeflectProjectilesInRange(attackRange))
+            {
+                StageManager.Instance?.CurrentSwarm?.Knockback(guardPushDistance, 0.2f);
+            }
+            
             yield return null;
         }
         _isGuarding = false;
@@ -336,13 +351,12 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     private void RespawnAtStart()
     {
         StopAllCoroutines();
-        _isDashing = _isAttacking = _isGuarding = _isUsingSkill = false;
+        _isDashing = _isAttacking = _isGuarding = _isUsingSkill = _isDashCooldown = false;
         StartCoroutine(RespawnAtNewFloor());
     }
 
     private IEnumerator RespawnAtNewFloor()
     {
-        // 화면 왼쪽 밖에서 달려오는 연출 (복구)
         transform.position = new Vector3(-8.0f, startPosition.y, 0f);
         if (animator != null) animator.SetTrigger(AnimMoveTrigger);
 

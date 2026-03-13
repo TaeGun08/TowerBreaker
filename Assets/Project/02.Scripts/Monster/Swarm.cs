@@ -12,10 +12,13 @@ public class Swarm : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private float stopDistance = 0.5f;
     [SerializeField] private float moveSpeedMultiplier = 1.0f;
+    [SerializeField] private float knockbackCooldown = 0.5f; 
 
-    public bool IsCleared => _monsters.Count == 0;
+    private float _lastKnockbackTime;
     private bool _isMoveStop;
     private bool _isForcedStop; 
+
+    public bool IsCleared => _monsters.Count == 0;
 
     public void SetMoveStop(bool stop)
     {
@@ -113,7 +116,6 @@ public class Swarm : MonoBehaviour
         bool hitAny = false;
         float threshold = playerX + range;
 
-        // 1. 몬스터 타격
         Monster targetMonster = null;
         float minTargetX = float.MaxValue;
 
@@ -134,7 +136,6 @@ public class Swarm : MonoBehaviour
             hitAny = true;
         }
 
-        // 2. 상자 등 기타 오브젝트 타격 복구 (물리 연산 사용)
         Collider2D[] others = Physics2D.OverlapCircleAll(new Vector2(playerX + range * 0.5f, 0), range);
         foreach (var col in others)
         {
@@ -151,6 +152,9 @@ public class Swarm : MonoBehaviour
 
     public void Knockback(float distance, float duration)
     {
+        if (Time.time < _lastKnockbackTime + knockbackCooldown) return;
+        _lastKnockbackTime = Time.time;
+
         StopAllCoroutines();
         StartCoroutine(KnockbackCoroutine(distance, duration));
     }
