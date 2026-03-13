@@ -24,24 +24,20 @@ public class StageManager : SingletonBase<StageManager>
             currentSwarm = value;
 
             // 새로운 현재 군집 처리
-            if (currentSwarm != null)
-            {
-                currentSwarm.SetMoveStop(false);
-                currentSwarm.OnCleared += NextStage; // 다 죽으면 다음 스테이지로
-            }
+            if (currentSwarm == null) return;
+            currentSwarm.SetMoveStop(false);
+            currentSwarm.OnCleared += NextStage; // 다 죽으면 다음 스테이지로
         }
     }
 
     private void Update()
     {
         // Space키: 현재 군집의 맨 앞 몬스터 공격
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (!Input.GetKeyDown(KeyCode.Space)) return;
+        if (CurrentSwarm != null && !CurrentSwarm.IsCleared)
         {
-            if (CurrentSwarm != null && !CurrentSwarm.IsCleared)
-            {
-                // 임시로 데미지 10 부여
-                CurrentSwarm.AttackFront(10);
-            }
+            // 임시로 데미지 10 부여
+            CurrentSwarm.AttackFront(10);
         }
     }
 

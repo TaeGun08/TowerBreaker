@@ -12,6 +12,8 @@ public abstract class Monster : MonoBehaviour
     [SerializeField] private MonsterType type;
     [SerializeField] protected int hp;
     [SerializeField] private float moveSpeed;
+    
+    [SerializeField] private Corpse[] corpse;
 
     public event Action<Monster> OnDie;
     public int CurrentHP { get; private set; }
@@ -42,6 +44,10 @@ public abstract class Monster : MonoBehaviour
     private void Die()
     {
         OnDie?.Invoke(this);
+        foreach (Corpse corp in corpse)
+        {
+            Instantiate(corp, transform.position, Quaternion.identity);
+        }
         Destroy(gameObject);
     }
 }
