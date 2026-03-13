@@ -4877,6 +4877,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe7673f80ca58064da54fa193213993a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerUnit
+  dontDestroy: 0
+  animator: {fileID: 5657525929778947844}
+  attackRange: 1
+  attackDamage: 1
+  attackCooldown: 0.3
+  dashDistance: 1
+  dashDuration: 0.1
+  dashStopThreshold: 1
+  guardPushDistance: 1
+  playerKnockbackDistance: 0.3
+  guardDuration: 0.3
+  startPosition: {x: -1.4, y: -0.1, z: 0}
 --- !u!1 &2931010435283640714
 GameObject:
   m_ObjectHideFlags: 0

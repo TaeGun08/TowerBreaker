@@ -18,7 +18,10 @@ public class PlayerButtonController : MonoBehaviour
     {
         playerButtons[0].onClick.AddListener(() =>
         {
-            
+            if (PlayerUnit.Instance != null)
+            {
+                PlayerUnit.Instance.PerformAttack();
+            }
         });
     }
 
@@ -26,7 +29,10 @@ public class PlayerButtonController : MonoBehaviour
     {
         playerButtons[1].onClick.AddListener(() =>
         {
-            
+            if (PlayerUnit.Instance != null)
+            {
+                PlayerUnit.Instance.PerformGuard();
+            }
         });
     }
 
@@ -34,7 +40,10 @@ public class PlayerButtonController : MonoBehaviour
     {
         playerButtons[2].onClick.AddListener(() =>
         {
-            
+            if (PlayerUnit.Instance != null)
+            {
+                PlayerUnit.Instance.PerformDash();
+            }
         });
     }
 }

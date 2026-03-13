@@ -9,32 +9,39 @@ public enum MonsterType
 
 public abstract class Monster : MonoBehaviour
 {
+    [Header("Monster Status")]
     [SerializeField] private MonsterType type;
-    [SerializeField] protected int hp;
-    [SerializeField] private float moveSpeed;
+    [SerializeField] protected int hp = 30;
+    [SerializeField] private float moveSpeed = 1.0f;
     
-    [SerializeField] private Corpse[] corpse;
+    [Header("Effects")]
+    [SerializeField] private Corpse[] corpse; // 변수명을 원래대로 복구하여 에디터 할당 값을 유지합니다.
 
     public event Action<Monster> OnDie;
     public int CurrentHP { get; private set; }
     public bool IsMoveStop { get; set; }
 
-    protected virtual void Start()
+    private bool _isDead = false;
+
+    protected virtual void Awake()
     {
         CurrentHP = hp;
     }
 
-    protected void Update()
+    protected virtual void Update()
     {
-        if (IsMoveStop) return;
+        if (IsMoveStop || _isDead) return;
+        
+        // 왼쪽으로 이동
         transform.Translate(Vector2.left * (moveSpeed * Time.deltaTime));
     }
 
     public void TakeDamage(int damage)
     {
-        if (CurrentHP <= 0) return;
+        if (_isDead) return;
 
         CurrentHP -= damage;
+        
         if (CurrentHP <= 0)
         {
             Die();
@@ -43,11 +50,24 @@ public abstract class Monster : MonoBehaviour
 
     private void Die()
     {
+        if (_isDead) return;
+        _isDead = true;
+
         OnDie?.Invoke(this);
-        foreach (Corpse corp in corpse)
+
+        // 시체 파편 이펙트 생성 (할당된 파편이 있다면 모두 생성)
+        if (corpse != null)
         {
-            Instantiate(corp, transform.position, Quaternion.identity);
+            foreach (Corpse corp in corpse)
+            {
+                if (corp != null)
+                {
+                    Instantiate(corp, transform.position, Quaternion.identity);
+                }
+            }
         }
+
+        // 오브젝트 파괴
         Destroy(gameObject);
     }
 }

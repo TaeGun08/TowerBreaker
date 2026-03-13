@@ -98,7 +98,8 @@ public class StageSpawner : MonoBehaviour
         var array = groundQueue.ToArray();
         if (array.Length > bottomBufferCount)
         {
-            StageManager.Instance.CurrentSwarm = array[bottomBufferCount].GetComponent<Swarm>();
+            // 발판 자체가 아닌 자식에서 Swarm을 찾음
+            StageManager.Instance.CurrentSwarm = array[bottomBufferCount].GetComponentInChildren<Swarm>();
         }
     }
 }

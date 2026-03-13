@@ -1,17 +1,18 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Swarm : MonoBehaviour
 {
     public event Action OnCleared;
-    private List<Monster> monsters = new();
+    private readonly List<Monster> _monsters = new();
 
-    public bool IsCleared => monsters.Count == 0;
+    [Header("Settings")]
+    [SerializeField] private float stopDistance = 0.5f;
 
-    /// <summary>
-    /// 지정된 설정으로 몬스터 군집을 생성합니다.
-    /// </summary>
+    public bool IsCleared => _monsters.Count == 0;
+
     public void Spawn(Monster prefab, int count, Vector3 offset, float spacingX)
     {
         Clear();
@@ -23,71 +24,95 @@ public class Swarm : MonoBehaviour
             if (prefab == null) continue;
 
             Monster monster = Instantiate(prefab, transform);
-            
             Vector3 spawnPos = offset;
             spawnPos.x += startX + (i * spacingX);
             
             monster.transform.localPosition = spawnPos;
-            monster.IsMoveStop = true; // 생성 시에는 정지 상태
+            monster.IsMoveStop = true; 
             monster.OnDie += HandleMonsterDie;
-            monsters.Add(monster);
+            _monsters.Add(monster);
         }
     }
 
     private void HandleMonsterDie(Monster monster)
     {
-        monsters.Remove(monster);
-        if (IsCleared)
-        {
-            OnCleared?.Invoke();
-        }
+        _monsters.Remove(monster);
+        if (IsCleared) OnCleared?.Invoke();
     }
 
     /// <summary>
-    /// 군집의 맨 앞에 있는 몬스터를 공격합니다.
+    /// StageManager에 의해 매 프레임 호출되어 이동 로직을 처리합니다.
     /// </summary>
-    public void AttackFront(int damage)
+    public void OnTick(PlayerUnit player)
     {
-        if (monsters.Count == 0) return;
+        if (IsCleared || player == null || player.IsTransitioning)
+        {
+            SetMoveStop(true);
+            return;
+        }
 
-        // X 좌표가 가장 작은(왼쪽으로 가장 많이 간) 몬스터가 맨 앞
+        Monster frontMonster = GetFrontMonster();
+        if (frontMonster == null) return;
+
+        float distance = frontMonster.transform.position.x - player.transform.position.x;
+        SetMoveStop(distance <= stopDistance);
+    }
+
+    public Monster GetFrontMonster()
+    {
         Monster frontMonster = null;
         float minX = float.MaxValue;
 
-        for (int i = 0; i < monsters.Count; i++)
+        foreach (var monster in _monsters)
         {
-            if (monsters[i] == null) continue;
-            
-            if (monsters[i].transform.localPosition.x < minX)
+            if (monster == null) continue;
+            if (monster.transform.localPosition.x < minX)
             {
-                minX = monsters[i].transform.localPosition.x;
-                frontMonster = monsters[i];
+                minX = monster.transform.localPosition.x;
+                frontMonster = monster;
             }
         }
-
-        if (frontMonster != null)
-        {
-            frontMonster.TakeDamage(damage);
-        }
+        return frontMonster;
     }
 
     /// <summary>
-    /// 군집 내 모든 몬스터의 이동 여부를 설정합니다.
+    /// 플레이어의 X 좌표와 공격 범위를 기준으로 몬스터들을 공격합니다.
+    /// 타격 성공 여부를 반환합니다.
     /// </summary>
+    public bool AttackInRange(float playerX, float range, int damage, bool damageAll = false)
+    {
+        if (IsCleared) return false;
+
+        float attackThreshold = playerX + range;
+        List<Monster> targets = _monsters.FindAll(m => m != null && m.transform.position.x <= attackThreshold);
+
+        if (targets.Count == 0) return false;
+
+        targets.Sort((a, b) => a.transform.position.x.CompareTo(b.transform.position.x));
+
+        if (damageAll)
+        {
+            foreach (var target in targets) target.TakeDamage(damage);
+        }
+        else
+        {
+            targets[0].TakeDamage(damage);
+        }
+        
+        return true;
+    }
+
     public void SetMoveStop(bool stop)
     {
-        foreach (var monster in monsters)
+        foreach (var monster in _monsters)
         {
-            if (monster != null)
-            {
-                monster.IsMoveStop = stop;
-            }
+            if (monster != null) monster.IsMoveStop = stop;
         }
     }
 
     public void Clear()
     {
-        foreach (var monster in monsters)
+        foreach (var monster in _monsters)
         {
             if (monster != null)
             {
@@ -95,6 +120,29 @@ public class Swarm : MonoBehaviour
                 Destroy(monster.gameObject);
             }
         }
-        monsters.Clear();
+        _monsters.Clear();
+    }
+
+    public void Knockback(float distance, float duration)
+    {
+        StopAllCoroutines();
+        StartCoroutine(KnockbackCoroutine(distance, duration));
+    }
+
+    private IEnumerator KnockbackCoroutine(float distance, float duration)
+    {
+        float elapsed = 0f;
+        Vector3 startPos = transform.localPosition;
+        Vector3 targetPos = startPos + Vector3.right * distance;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float easeOut = 1f - (1f - t) * (1f - t);
+            transform.localPosition = Vector3.Lerp(startPos, targetPos, easeOut);
+            yield return null;
+        }
+        transform.localPosition = targetPos;
     }
 }

@@ -16,16 +16,26 @@ public class MonsterSpawner : MonoBehaviour
 
     /// <summary>
     /// 플랫폼에 몬스터 군집을 생성합니다.
-    /// 설정된 spawnOffset과 spacingX가 적용됩니다.
+    /// 발판 자체를 밀지 않도록 자식 오브젝트(SwarmContainer)를 생성하여 관리합니다.
     /// </summary>
     public void SpawnMonsterOnPlatform(GameObject platform)
     {
         if (monsterPrefab == null) return;
 
-        Swarm swarm = platform.GetComponent<Swarm>();
-        if (swarm == null)
+        // 발판 아래에 Swarm 전용 컨테이너가 있는지 확인
+        Transform swarmTransform = platform.transform.Find("SwarmContainer");
+        Swarm swarm;
+
+        if (swarmTransform == null)
         {
-            swarm = platform.AddComponent<Swarm>();
+            GameObject swarmObj = new GameObject("SwarmContainer");
+            swarmObj.transform.SetParent(platform.transform);
+            swarmObj.transform.localPosition = Vector3.zero;
+            swarm = swarmObj.AddComponent<Swarm>();
+        }
+        else
+        {
+            swarm = swarmTransform.GetComponent<Swarm>();
         }
 
         int count = Random.Range(minCount, maxCount + 1);
@@ -36,7 +46,8 @@ public class MonsterSpawner : MonoBehaviour
 
     public void ClearMonsterOnPlatform(GameObject platform)
     {
-        Swarm swarm = platform.GetComponent<Swarm>();
+        // 자식 오브젝트에서 Swarm을 찾아 제거
+        Swarm swarm = platform.GetComponentInChildren<Swarm>();
         if (swarm != null)
         {
             swarm.Clear();
