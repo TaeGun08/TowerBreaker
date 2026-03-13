@@ -22,7 +22,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     [SerializeField] private float attackRange = 1.3f;
     [SerializeField] private float attackCooldown = 0.25f;
     [SerializeField] private float guardDuration = 0.45f; 
-    [SerializeField] private float guardCooldown = 0.5f; // 가드 쿨타임 추가
+    [SerializeField] private float guardCooldown = 0.5f; 
     [SerializeField] private float guardPushDistance = 1.3f;
     [SerializeField] private float playerGuardRecoil = 0.25f;
 
@@ -101,22 +101,32 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
         if (IsActionActive)
         {
-            ApplyBlockFeedback(isProjectile: false);
+            ApplyBlockFeedback(isProjectile: false, isDashing: _isDashing);
             return;
         }
 
         _statsController.ApplyDamage(damage);
         if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.1f, 0.1f);
-        if (_feedback != null) _feedback.PlayHitEffect(canPlayAnimation: true);
+        
+        // 어떤 동작(공격, 대쉬, 가드, 스킬)도 하지 않을 때만 피격 모션 재생
+        bool shouldPlayHitAnim = !(_isAttacking || _isDashing || _isGuarding || _isUsingSkill);
+        if (_feedback != null) _feedback.PlayHitEffect(canPlayAnimation: shouldPlayHitAnim);
+        
         if (CurrentHP <= 0) Die();
     }
 
-    private void ApplyBlockFeedback(bool isProjectile)
+    private void ApplyBlockFeedback(bool isProjectile, bool isDashing = false)
     {
         TriggerCombatJuice(0.05f, 0.05f, 0.05f);
         OnDeflectSuccess(transform.position + Vector3.right * 0.2f);
-        StartCoroutine(PlayerRecoilCoroutine());
 
+        // 대쉬 중이 아닐 때만 플레이어 리코일 발생 (대쉬 중 넉백 필요 없음 피드백 반영)
+        if (!isDashing)
+        {
+            StartCoroutine(PlayerRecoilCoroutine());
+        }
+
+        // 근접 공격(isProjectile = false)일 때만 적 군집 넉백
         if (!isProjectile)
         {
             StageManager.Instance?.CurrentSwarm?.Knockback(guardPushDistance, 0.2f);
@@ -150,7 +160,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         {
             if (_isGuarding)
             {
-                ApplyBlockFeedback(isProjectile: false);
+                ApplyBlockFeedback(isProjectile: false, isDashing: false);
                 return; 
             }
 
@@ -205,12 +215,21 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         if (animator != null)
         {
             animator.SetTrigger(AnimAttackTrigger);
+            
+            // [복구] 애니메이션 휘두르는 타이밍(normalizedTime) 체크 - 정교하게 복구
+            float timeout = 0.5f;
+            float elapsed = 0f;
             yield return null; 
-            while (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.65f)
+            while (elapsed < timeout)
             {
-                if (animator.IsInTransition(0)) yield return null;
-                else yield return null;
-                if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.65f) break;
+                elapsed += Time.deltaTime;
+                var state = animator.GetCurrentAnimatorStateInfo(0);
+                // 공격 상태이거나 공격 상태로 전이 중인 경우 체크
+                if (state.IsName("Attack") || state.IsName("2_Attack")) 
+                {
+                    if (state.normalizedTime >= 0.3f) break;
+                }
+                yield return null;
             }
         }
 
@@ -223,7 +242,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     {
         if (DeflectProjectilesInRange(attackRange))
         {
-            ApplyBlockFeedback(isProjectile: true);
+            ApplyBlockFeedback(isProjectile: true, isDashing: false);
         }
 
         Swarm swarm = StageManager.Instance?.CurrentSwarm;
@@ -259,7 +278,8 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             
             if (DeflectProjectilesInRange(0.5f))
             {
-                ApplyBlockFeedback(isProjectile: true);
+                // 대쉬 중 투사체 방어 시 플레이어 넉백 제외 (피드백 반영)
+                ApplyBlockFeedback(isProjectile: true, isDashing: true);
             }
 
             transform.position = nextPos;
@@ -287,7 +307,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             Monster front = swarm.GetFrontMonster();
             if (front != null && (front.transform.position.x - transform.position.x) <= contactDamageRange + 0.3f)
             {
-                ApplyBlockFeedback(isProjectile: false);
+                ApplyBlockFeedback(isProjectile: false, isDashing: false);
             }
         }
 
@@ -297,7 +317,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             elapsed += Time.deltaTime;
             if (DeflectProjectilesInRange(attackRange))
             {
-                ApplyBlockFeedback(isProjectile: true);
+                ApplyBlockFeedback(isProjectile: true, isDashing: false);
             }
             yield return null;
         }
@@ -368,7 +388,11 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     public void MoveToNextFloorSequence(Action onComplete)
     {
-        if (_isTransitioning) return;
+        if (_isTransitioning)
+        {
+            onComplete?.Invoke();
+            return;
+        }
         StartCoroutine(MoveRightAndExit(onComplete));
     }
 

@@ -10,22 +10,28 @@ public class Swarm : MonoBehaviour
     private Monster _cachedFrontMonster;
 
     [Header("Settings")]
-    [SerializeField] private float stopDistance = 0.7f; // 0.8 -> 0.7로 조정
+    [SerializeField] private float stopDistance = 0.7f; 
     [SerializeField] private float knockbackCooldown = 0.5f; 
 
     private float _lastKnockbackTime;
     private bool _isForcedStop; 
-
+    
+    // 군집 전체 이동 가능 여부
+    public bool CanMove { get; private set; }
     public bool IsCleared => _monsters.Count == 0;
 
     public void SetMoveStop(bool stop)
     {
         _isForcedStop = stop;
+        // 개별 몬스터들에게도 상태 전달
+        foreach (var m in _monsters) if (m != null) m.IsMoveStop = stop;
     }
 
     public void SpawnMixed(Monster[] prefabs, Vector3 offset, float spacingX, int floorCount = 0)
     {
         Clear();
+        _isForcedStop = false;
+        
         if (prefabs == null || prefabs.Length == 0) return;
 
         float startX = -(prefabs.Length - 1) * spacingX * 0.5f;
@@ -66,33 +72,44 @@ public class Swarm : MonoBehaviour
     private void Update()
     {
         if (StageManager.Instance == null || StageManager.Instance.CurrentSwarm != this) return;
-        if (_isForcedStop) return;
+        if (_isForcedStop) 
+        {
+            CanMove = false;
+            return;
+        }
 
         PlayerUnit player = PlayerUnit.Instance;
-        if (player == null || player.IsTransitioning) return;
+        if (player == null || player.IsTransitioning) 
+        {
+            CanMove = false;
+            return;
+        }
 
         Monster front = GetFrontMonster();
-        if (front == null) return;
+        if (front == null) 
+        {
+            CanMove = false;
+            return;
+        }
 
-        // 월드 좌표 기준 플레이어와의 X축 거리 계산
+        // 1. 맨 앞 개체와의 거리 체크
         float distance = front.transform.position.x - player.transform.position.x;
         
-        // 정지 거리보다 멀 때만 이동
-        if (distance > stopDistance)
+        // 2. 전체 이동 가능 여부 결정 (맨 앞이 멈추면 다 멈춤)
+        CanMove = (distance > stopDistance);
+
+        // 3. 특정 몬스터가 패턴 수행 중(IsMoveStop)이면 군집 전체 정지
+        if (CanMove)
         {
-            // 군집 내 어떤 몬스터라도 패턴 중(IsMoveStop)이면 군집 전체가 멈춤
-            bool anyMonsterActing = _monsters.Exists(m => m != null && m.IsMoveStop);
-            if (!anyMonsterActing)
+            if (_monsters.Exists(m => m != null && m.IsMoveStop))
             {
-                float moveDelta = front.MoveSpeed * Time.deltaTime;
-                transform.Translate(Vector3.left * moveDelta);
+                CanMove = false;
             }
         }
     }
 
     public Monster GetFrontMonster()
     {
-        // 캐싱된 몬스터가 없거나 비활성화된 경우 새로 찾기
         if (_cachedFrontMonster == null || !_cachedFrontMonster.gameObject.activeInHierarchy)
         {
             float minX = float.MaxValue;
@@ -135,7 +152,6 @@ public class Swarm : MonoBehaviour
             return true;
         }
 
-        // 상자 등 기타 IDamageable 탐색
         Collider2D[] others = Physics2D.OverlapCircleAll(new Vector2(playerX + range * 0.5f, 0), range);
         foreach (var col in others)
         {
@@ -155,24 +171,26 @@ public class Swarm : MonoBehaviour
         if (Time.time < _lastKnockbackTime + knockbackCooldown) return;
         _lastKnockbackTime = Time.time;
 
-        StopAllCoroutines();
-        StartCoroutine(KnockbackCoroutine(distance, duration));
+        foreach (var m in _monsters)
+        {
+            if (m != null) StartCoroutine(IndividualKnockback(m, distance, duration));
+        }
     }
 
-    private IEnumerator KnockbackCoroutine(float distance, float duration)
+    private IEnumerator IndividualKnockback(Monster m, float distance, float duration)
     {
         float elapsed = 0f;
-        Vector3 startPos = transform.localPosition;
+        Vector3 startPos = m.transform.position;
         Vector3 targetPos = startPos + Vector3.right * distance;
         while (elapsed < duration)
         {
+            if (m == null) yield break;
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
             float easeOut = 1f - (1f - t) * (1f - t);
-            transform.localPosition = Vector3.Lerp(startPos, targetPos, easeOut);
+            m.transform.position = Vector3.Lerp(startPos, targetPos, easeOut);
             yield return null;
         }
-        transform.localPosition = targetPos;
     }
 
     public void Clear()

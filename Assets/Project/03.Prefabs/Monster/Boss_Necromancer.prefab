@@ -56,10 +56,10 @@ MonoBehaviour:
   - {fileID: 8873149249959205514, guid: fbcde91653028c64db305f6fada66439, type: 3}
   - {fileID: -9029838754324041997, guid: 407918eb18f996f409916c44322d3437, type: 3}
   - {fileID: -8854219391508959043, guid: ab7a9e67eae26844ca3070a42bb5781d, type: 3}
+  chestPrefab: {fileID: -2510768055870219514, guid: 3eb236c9b29a5bf44b73db8d5b0d52d5, type: 3}
   minionPrefab: {fileID: 5232547619596822455, guid: dc8d402a3423a5741a3fc9fdbf85b04c, type: 3}
   magicCirclePrefab: {fileID: 4351978889116828668, guid: 7ec363c8df426644ea85f8d6d570561c, type: 3}
   patternInterval: 3
-  maintainDistance: 4
 --- !u!114 &5983519683959762111
 MonoBehaviour:
   m_ObjectHideFlags: 0

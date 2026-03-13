@@ -3,34 +3,57 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class Corpse : MonoBehaviour
 {
-    [SerializeField] private float lifetime = 2.0f; 
+    private bool _isAbsorbed = false;
     private Rigidbody2D _rigid;
+
+    private void Awake()
+    {
+        _rigid = GetComponent<Rigidbody2D>();
+        if (_rigid != null)
+        {
+            _rigid.linearDamping = 1.0f; // 공기 저항 추가로 미끄러짐 방지
+            _rigid.angularDamping = 2.0f; // 회전 저항 추가로 타이어 현상 방지
+        }
+    }
 
     private void Start()
     {
-        _rigid = GetComponent<Rigidbody2D>();
-        
-        // 회전 및 이동 저항을 높여서 미끄러지듯 멈추게 설정
-        _rigid.linearDamping = 1.0f;          // 선형 저항 (이동 멈춤)
-        _rigid.angularDamping = 5.0f;   // 회전 저항 (회전 멈춤)
-        
         Explode();
-        
-        Destroy(gameObject, lifetime);
     }
 
     private void Explode()
     {
         if (_rigid == null) return;
 
-        Vector2 randomDir = Random.insideUnitCircle.normalized;
-        // 위쪽 방향으로 힘을 더 실어주어 튀어오르는 느낌 강조
-        randomDir += Vector2.up * 0.5f;
-
-        float force = Random.Range(4f, 8f); 
-        float torque = Random.Range(-2f, 2f); // 회전력을 대폭 낮춤
-
-        _rigid.AddForce(randomDir * force, ForceMode2D.Impulse);
+        // 힘의 크기를 약간 조절하고 회전력(Torque)을 대폭 낮춤
+        Vector2 force = new Vector2(Random.Range(-1.5f, 1.5f), Random.Range(2.5f, 4.5f));
+        _rigid.AddForce(force, ForceMode2D.Impulse);
+        
+        // 회전력을 아주 작게 주어 자연스럽게 눕도록 유도
+        float torque = Random.Range(-2f, 2f); 
         _rigid.AddTorque(torque, ForceMode2D.Impulse);
+    }
+
+    public void StartAbsorb()
+    {
+        if (_isAbsorbed) return;
+        _isAbsorbed = true;
+
+        if (_rigid != null)
+        {
+            _rigid.simulated = false;
+        }
+
+        if (UIAbsorber.Instance != null)
+        {
+            UIAbsorber.Instance.Absorb(gameObject, false, () => {
+                // 수집 완료 시 CurrencyManager 업데이트
+                if (CurrencyManager.Instance != null) CurrencyManager.Instance.AddGold(1);
+            });
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 }

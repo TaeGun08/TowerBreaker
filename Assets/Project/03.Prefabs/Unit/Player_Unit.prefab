@@ -4908,12 +4908,14 @@ MonoBehaviour:
   attackRange: 0.8
   attackCooldown: 0.3
   guardDuration: 0.3
+  guardCooldown: 0.5
   guardPushDistance: 0.8
   playerGuardRecoil: 0.3
   dashDistance: 0.8
   dashStopThreshold: 0.8
+  dashCooldown: 0.4
   startPosition: {x: -1.4, y: -0.1, z: 0}
-  contactDamageRange: 0.5
+  contactDamageRange: 0.8
   contactDamageInterval: 1
   contactDamage: 5
 --- !u!114 &8903768881616969508

@@ -2,36 +2,36 @@ using UnityEngine;
 
 public class RewardChest : MonoBehaviour, IDamageable
 {
-    [SerializeField] private GameObject openEffectPrefab;
-    private bool _isOpened = false;
+    private bool _isAbsorbed = false;
 
     // IDamageable 인터페이스 구현
-    public int CurrentHP => _isOpened ? 0 : 1;
+    public int CurrentHP => _isAbsorbed ? 0 : 1;
 
     public void TakeDamage(int damage, bool isCrit = false)
     {
-        if (_isOpened) return;
-        Open();
+        if (_isAbsorbed) return;
+        StartAbsorb();
     }
 
-    private void Open()
+    public void StartAbsorb()
     {
-        _isOpened = true;
-        
-        // 1. 랜덤 능력치 상승
-        string upgradeMsg = PlayerUnit.Instance.UpgradeRandomStat();
-        
-        // 2. UI 알림
-        if (InGameUIManager.Instance != null)
+        if (_isAbsorbed) return;
+        _isAbsorbed = true;
+
+        // 타격 시 가벼운 흔들림 연출
+        if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.15f, 0.15f);
+
+        if (UIAbsorber.Instance != null)
         {
-            InGameUIManager.Instance.ShowUpgradeNotice(upgradeMsg);
+            // 상자 타겟(isChest = true)으로 날려보냄
+            UIAbsorber.Instance.Absorb(gameObject, true, () => {
+                // UI 도달 시 데이터 저장
+                if (CurrencyManager.Instance != null) CurrencyManager.Instance.AddChest(1);
+            });
         }
-
-        // 3. 연출
-        if (openEffectPrefab != null) Instantiate(openEffectPrefab, transform.position, Quaternion.identity);
-        if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.2f, 0.2f);
-
-        // 4. 삭제
-        Destroy(gameObject, 0.5f);
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 }

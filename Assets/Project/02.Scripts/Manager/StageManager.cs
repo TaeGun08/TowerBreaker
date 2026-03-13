@@ -10,7 +10,7 @@ public class StageManager : SingletonBase<StageManager>
     [Header("Game State")]
     [field: SerializeField] public int StageCount { get; private set; } = 0; 
     [SerializeField] private int maxStageCount = 100;
-    [SerializeField] private float autoProceedDelay = 0.8f; // 대기 시간 단축
+    [SerializeField] private float autoProceedDelay = 0.8f; 
     
     public bool IsTransitioning { get; private set; }
 
@@ -29,6 +29,8 @@ public class StageManager : SingletonBase<StageManager>
 
             _currentSwarm = value;
             if (_currentSwarm == null) return;
+            
+            _currentSwarm.SetMoveStop(false);
             _currentSwarm.OnCleared += HandleSwarmCleared;
         }
     }
@@ -56,35 +58,54 @@ public class StageManager : SingletonBase<StageManager>
     private IEnumerator AutoProceedToNextFloor()
     {
         IsTransitioning = true;
-        
-        // 1. 적 처치 후 아주 짧게 대기
+
+        // 적 전멸 후 모든 보상(시체, 상자) 수집
+        CollectAllRewards();
         yield return new WaitForSeconds(autoProceedDelay);
 
-        // 2. 플레이어 퇴장 연출
         if (PlayerUnit.Instance != null)
         {
             bool playerMoved = false;
+            float waitTimeout = 2.0f;
+            float waitElapsed = 0f;
+
             PlayerUnit.Instance.MoveToNextFloorSequence(() => { playerMoved = true; });
-            yield return new WaitUntil(() => playerMoved);
+            
+            while (!playerMoved && waitElapsed < waitTimeout)
+            {
+                waitElapsed += Time.deltaTime;
+                yield return null;
+            }
         }
 
-        // 3. 내부 데이터 갱신 및 스크롤 시작
         bool wasBoss = ((StageCount + 1) % 5 == 0); 
-        
-        // NextStage() 내부에서 OnStageProgress가 발생하고, StageSpawner가 이를 받아 스크롤을 시작함
         NextStage(wasBoss);
         
-        // 4. 스탯 보상 (보스 아닐 때만)
         if (!wasBoss && PlayerUnit.Instance != null)
         {
             string msg = PlayerUnit.Instance.UpgradeRandomStat();
             if (InGameUIManager.Instance != null) InGameUIManager.Instance.ShowUpgradeNotice(msg);
         }
         
-        // 5. 스크롤 연출 완료 대기 (StageScroller와 시간 맞춤)
         yield return new WaitForSeconds(0.5f); 
-        
         IsTransitioning = false;
+    }
+
+    private void CollectAllRewards()
+    {
+        // 1. 모든 시체 수집
+        Corpse[] corpses = FindObjectsByType<Corpse>(FindObjectsSortMode.None);
+        foreach (var corpse in corpses)
+        {
+            if (corpse != null) corpse.StartAbsorb();
+        }
+
+        // 2. 미획득 보상 상자 수집 추가
+        RewardChest[] chests = FindObjectsByType<RewardChest>(FindObjectsSortMode.None);
+        foreach (var chest in chests)
+        {
+            if (chest != null) chest.StartAbsorb();
+        }
     }
 
     public void NextStage(bool wasBoss = false)
@@ -100,14 +121,14 @@ public class StageManager : SingletonBase<StageManager>
     public void TriggerHitStop(float duration)
     {
         if (!gameObject.activeInHierarchy) return;
+        StopCoroutine("HitStopCoroutine");
         StartCoroutine(HitStopCoroutine(duration));
     }
 
     private IEnumerator HitStopCoroutine(float duration)
     {
-        float originalScale = Time.timeScale;
         Time.timeScale = 0f;
         yield return new WaitForSecondsRealtime(duration);
-        Time.timeScale = originalScale;
+        Time.timeScale = 1.0f; 
     }
 }

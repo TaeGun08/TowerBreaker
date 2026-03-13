@@ -7,12 +7,16 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     [Header("Player Info")]
     [SerializeField] private TextMeshProUGUI hpText;
 
+    [Header("Currency Info")]
+    [SerializeField] private TextMeshProUGUI goldText; 
+    [SerializeField] private TextMeshProUGUI chestText; 
+
     [Header("Stage Info")]
     [SerializeField] private TextMeshProUGUI stageText;
 
     [Header("Stat Info")]
-    [SerializeField] private TextMeshProUGUI statsText; // 전체 스탯 리스트
-    [SerializeField] private TextMeshProUGUI upgradeNoticeText; // 이번에 상승한 스탯 알림
+    [SerializeField] private TextMeshProUGUI statsText; 
+    [SerializeField] private TextMeshProUGUI upgradeNoticeText; 
 
     [Header("Damage Font Settings")]
     [SerializeField] private DamageText damageTextPrefab;
@@ -36,6 +40,11 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
     private void Start()
     {
+        InitializeUI();
+    }
+
+    private void InitializeUI()
+    {
         if (PlayerUnit.Instance != null)
         {
             UpdateHP(PlayerUnit.Instance.CurrentHP, PlayerUnit.Instance.Stats.maxHp);
@@ -45,6 +54,18 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         if (StageManager.Instance != null)
         {
             UpdateStageText(StageManager.Instance.StageCount);
+        }
+
+        // 인게임 UI는 항상 0부터 시작 (세션 데이터 기반)
+        if (CurrencyManager.Instance != null)
+        {
+            UpdateGoldUI(CurrencyManager.Instance.SessionGold);
+            UpdateChestUI(CurrencyManager.Instance.SessionChests);
+        }
+        else
+        {
+            UpdateGoldUI(0);
+            UpdateChestUI(0);
         }
 
         if (upgradeNoticeText != null) upgradeNoticeText.gameObject.SetActive(false);
@@ -57,6 +78,13 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
         if (StageManager.Instance != null)
             StageManager.Instance.OnStageProgress += HandleStageProgress;
+
+        // 세션 전용 이벤트 구독
+        if (CurrencyManager.Instance != null)
+        {
+            CurrencyManager.Instance.OnSessionGoldChanged += UpdateGoldUI;
+            CurrencyManager.Instance.OnSessionChestChanged += UpdateChestUI;
+        }
     }
 
     private void OnDisable()
@@ -66,6 +94,12 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
         if (StageManager.Instance != null && !SingletonBase<StageManager>.IsQuitting)
             StageManager.Instance.OnStageProgress -= HandleStageProgress;
+
+        if (CurrencyManager.Instance != null && !SingletonBase<CurrencyManager>.IsQuitting)
+        {
+            CurrencyManager.Instance.OnSessionGoldChanged -= UpdateGoldUI;
+            CurrencyManager.Instance.OnSessionChestChanged -= UpdateChestUI;
+        }
     }
 
     private void HandleHealthChanged(int cur, int max)
@@ -78,18 +112,26 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     {
         if (statsText == null || PlayerUnit.Instance == null) return;
         var s = PlayerUnit.Instance.Stats;
-        // 가독성을 위해 줄바꿈과 여백을 추가한 형식으로 변경
         statsText.text = $"<b>ATK</b>  {s.baseDamage}\n" +
                          $"<b>DEF</b>  {s.defense}\n" +
                          $"<b>CRIT</b> {Mathf.RoundToInt(s.critChance * 100)}%\n" +
                          $"<b>DBL</b>  {Mathf.RoundToInt(s.doubleHitChance * 100)}%";
     }
 
+    public void UpdateGoldUI(int gold)
+    {
+        if (goldText != null) goldText.text = gold.ToString();
+    }
+
+    public void UpdateChestUI(int chests)
+    {
+        if (chestText != null) chestText.text = chests.ToString();
+    }
+
     public void ShowUpgradeNotice(string message)
     {
         if (upgradeNoticeText == null) return;
         
-        // 텍스트 애니메이션 효과(강조)를 위해 잠시 끄고 켬
         upgradeNoticeText.gameObject.SetActive(false);
         upgradeNoticeText.text = $"<color=green>UPGRADE!</color>\n<size=120%>{message}</size>";
         upgradeNoticeText.gameObject.SetActive(true);
@@ -126,7 +168,6 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     {
         if (stageText != null)
         {
-            // stage가 0부터 시작하므로 1을 더해 표시
             stageText.text = $"FLOOR {stage + 1}";
         }
     }

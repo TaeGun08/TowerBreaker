@@ -5,48 +5,50 @@ public class AreaEffect : MonoBehaviour
 {
     [Header("AOE Settings")]
     [SerializeField] private float warningDuration = 1.2f;
-    [SerializeField] private float damageRadius = 1.2f;
-    [SerializeField] private int damage = 15;
+    [SerializeField] private float damageRadius = 1.5f;
+    [SerializeField] private int damage = 20;
+    
+    [Header("Visuals")]
+    [SerializeField] private GameObject warningVisual; // 예고 연출 (빨간 원 등)
+    [SerializeField] private GameObject explosionVisual; // 실제 폭발 이펙트
 
     private void Start()
     {
-        StartCoroutine(EffectSequence());
+        StartCoroutine(EffectRoutine());
     }
 
-    private IEnumerator EffectSequence()
+    private IEnumerator EffectRoutine()
     {
-        // 시각적 피드백 (스케일이 커지거나 색이 변하는 등의 연출 추가 지점)
-        transform.localScale = Vector3.zero;
-        float elapsed = 0f;
-        while (elapsed < warningDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / warningDuration;
-            transform.localScale = Vector3.one * (t * damageRadius);
-            yield return null;
-        }
+        // 1. 경고 연출
+        if (warningVisual != null) warningVisual.SetActive(true);
+        if (explosionVisual != null) explosionVisual.SetActive(false);
 
-        // 실제 타격 판정
+        yield return new WaitForSeconds(warningDuration);
+
+        // 2. 폭발 연출
+        if (warningVisual != null) warningVisual.SetActive(false);
+        if (explosionVisual != null) explosionVisual.SetActive(true);
+
+        // 3. 실제 타격 판정
         if (PlayerUnit.Instance != null && !PlayerUnit.Instance.IsTransitioning)
         {
             float dist = Vector2.Distance(transform.position, PlayerUnit.Instance.transform.position);
             if (dist <= damageRadius)
             {
-                Debug.Log("<color=red>Player caught in explosion!</color>");
-                // TakeDamage에서 가드 여부를 체크하므로, 가드 중이면 데미지를 입지 않습니다.
+                // [수정] TakeDamage 호출. 플레이어가 가드 중이면 내부에서 완전 방어됨.
                 PlayerUnit.Instance.TakeDamage(damage); 
                 
-                // 플레이어가 가드 중이 아닐 때만 강한 흔들림과 히트스탑 적용
-                if (!PlayerUnit.Instance.IsActionActive) // 가드나 대쉬 중이 아닐 때
+                // 플레이어가 가드 중이 아닐 때만 강한 피드백
+                if (!PlayerUnit.Instance.IsActionActive)
                 {
-                    CameraManager.Instance.Shake(0.2f, 0.15f);
-                    StageManager.Instance.TriggerHitStop(0.05f);
+                    if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.2f, 0.15f);
+                    if (StageManager.Instance != null) StageManager.Instance.TriggerHitStop(0.05f);
                 }
             }
         }
 
         // 이펙트 후 사라짐
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.5f);
         Destroy(gameObject);
     }
 }
