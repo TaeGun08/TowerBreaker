@@ -19,20 +19,23 @@ public class RewardChest : MonoBehaviour, IDamageable
         if (_isAbsorbed) return;
         _isAbsorbed = true;
 
-        // 타격 시 가벼운 흔들림 연출
+        // 1. 데이터 즉시 반영 (가장 확실함)
+        if (CurrencyManager.Instance != null)
+        {
+            CurrencyManager.Instance.AddChest(1);
+        }
+
+        // 2. 타격 연출
         if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.15f, 0.15f);
 
+        // 3. UI 연출 시도
         if (UIAbsorber.Instance != null)
         {
-            // 상자 타겟(isChest = true)으로 날려보냄
-            UIAbsorber.Instance.Absorb(gameObject, true, () => {
-                // UI 도달 시 데이터 저장
-                if (CurrencyManager.Instance != null) CurrencyManager.Instance.AddChest(1);
-            });
+            UIAbsorber.Instance.Absorb(gameObject, true, null);
         }
         else
         {
-            Destroy(gameObject);
+            Destroy(gameObject, 0.5f);
         }
     }
 }

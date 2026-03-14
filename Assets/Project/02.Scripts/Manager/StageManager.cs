@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement; // 씬 전환용
 
 public class StageManager : SingletonBase<StageManager>
 {
@@ -24,6 +25,7 @@ public class StageManager : SingletonBase<StageManager>
 
     public bool IsTransitioning { get; private set; }
     private Swarm _currentSwarm;
+    private bool _isGameOver = false; // 게임 종료 상태 플래그
 
     #endregion
 
@@ -58,9 +60,34 @@ public class StageManager : SingletonBase<StageManager>
         base.Awake();
     }
 
+    private void Update()
+    {
+        // 플레이어 사망 체크
+        if (!_isGameOver && PlayerUnit.Instance != null && PlayerUnit.Instance.CurrentHP <= 0)
+        {
+            HandleGameOver();
+        }
+    }
+
     #endregion
 
     #region Stage Progression
+
+    private void HandleGameOver()
+    {
+        _isGameOver = true;
+        Debug.Log("<color=red>Game Over! Returning to Main Menu...</color>");
+        StartCoroutine(GameOverSequence());
+    }
+
+    private IEnumerator GameOverSequence()
+    {
+        // 사망 연출 대기
+        yield return new WaitForSecondsRealtime(2.5f);
+        
+        // 메인 메뉴 씬으로 이동
+        SceneManager.LoadScene("OutGame");
+    }
 
     private void HandleSwarmCleared()
     {
@@ -69,10 +96,11 @@ public class StageManager : SingletonBase<StageManager>
         if (StageCount >= maxStageCount - 1)
         {
             OnGameClear?.Invoke();
+            // 게임 클리어 시에도 메인 메뉴로 복귀 가능 (필요 시 로직 확장)
             return;
         }
         
-        if (!IsTransitioning)
+        if (!IsTransitioning && !_isGameOver)
         {
             StartCoroutine(AutoProceedToNextFloor());
         }

@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
 {
-    private static T _instance;
+    protected static T _instance; // private -> protected 로 변경
     private static readonly object _lock = new object();
     private static bool _applicationIsQuitting = false;
     public static bool IsQuitting => _applicationIsQuitting;
@@ -14,11 +14,7 @@ public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
     {
         get
         {
-            if (_applicationIsQuitting)
-            {
-                Debug.LogWarning($"[Singleton] Instance '{typeof(T)}' already destroyed on application quit. Won't create again - returning null.");
-                return null;
-            }
+            if (_applicationIsQuitting) return null;
 
             lock (_lock)
             {
@@ -28,14 +24,10 @@ public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
 
                 if (_instance != null) return _instance;
 
+                // 인스턴스가 없으면 새로 생성 (이게 없어서 먹통이었음)
                 GameObject singleton = new GameObject();
                 _instance = singleton.AddComponent<T>();
                 singleton.name = "(singleton) " + typeof(T).ToString();
-
-                // If it's the first creation and it needs to be persistent
-                // Awake will handle this, but if Awake isn't called yet (unlikely)
-                // we set it here if we want immediate persistence.
-                // However, since we use AddComponent, Awake will be called.
                 
                 return _instance;
             }

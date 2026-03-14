@@ -43,19 +43,20 @@ public class Corpse : MonoBehaviour
 
         if (_rigid != null) _rigid.simulated = false;
 
+        // [수정] 연출과 별개로 재화 추가 로직을 즉시 실행 (혹은 매우 짧은 지연 후)
+        int reward = _originType == MonsterType.Boss ? 150 : 20;
+        if (CurrencyManager.Instance != null)
+        {
+            CurrencyManager.Instance.AddCorpse(reward);
+        }
+
         if (UIAbsorber.Instance != null)
         {
-            UIAbsorber.Instance.Absorb(gameObject, false, () => {
-                if (CurrencyManager.Instance != null)
-                {
-                    int reward = _originType == MonsterType.Boss ? 150 : 20;
-                    CurrencyManager.Instance.AddCorpse(reward);
-                }
-            });
+            UIAbsorber.Instance.Absorb(gameObject, false, null);
         }
         else
         {
-            Destroy(gameObject);
+            Destroy(gameObject, 0.5f);
         }
     }
 }

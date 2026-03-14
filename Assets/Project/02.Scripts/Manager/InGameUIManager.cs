@@ -51,22 +51,27 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
     private void InitializeUI()
     {
+        // 1. 플레이어 정보 초기화
         if (PlayerUnit.Instance != null)
         {
             UpdateHP(PlayerUnit.Instance.CurrentHP, PlayerUnit.Instance.Stats.maxHp);
             UpdateStatsDisplay();
-            UpdateSkillButtons(); // 스킬 버튼 초기화
+            UpdateSkillButtons();
         }
 
+        // 2. 스테이지 정보 초기화
         if (StageManager.Instance != null)
         {
             UpdateStageText(StageManager.Instance.StageCount);
         }
 
-        if (CurrencyManager.Instance != null)
+        // 3. 재화 정보 즉시 동기화 (가장 중요)
+        var cm = CurrencyManager.Instance;
+        if (cm != null)
         {
-            UpdateCorpseUI(CurrencyManager.Instance.SessionCorpse);
-            UpdateChestUI(CurrencyManager.Instance.SessionChests);
+            UpdateCorpseUI(cm.SessionCorpse);
+            UpdateChestUI(cm.SessionChests);
+            Debug.Log($"<color=cyan>UI Initialized: Corpse={cm.SessionCorpse}, Chest={cm.SessionChests}</color>");
         }
         else
         {
@@ -98,6 +103,9 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
     private void OnDisable()
     {
+        // 앱 종료 중에는 이벤트 해제를 시도하지 않음 (참조 오류 방지)
+        if (SingletonBase<InGameUIManager>.IsQuitting) return;
+
         if (PlayerUnit.Instance != null && !SingletonBase<PlayerUnit>.IsQuitting)
         {
             PlayerUnit.Instance.OnHealthChanged -= HandleHealthChanged;
@@ -107,7 +115,6 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         if (StageManager.Instance != null && !SingletonBase<StageManager>.IsQuitting)
             StageManager.Instance.OnStageProgress -= HandleStageProgress;
 
-        // [수정] SingletonBase의 IsQuitting 플래그를 사용하여 종료 시 접근 방지
         if (!SingletonBase<CurrencyManager>.IsQuitting)
         {
             var cm = CurrencyManager.Instance;
