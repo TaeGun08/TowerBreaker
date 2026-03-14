@@ -10,13 +10,13 @@ public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
     {
         if (CurrencyManager.Instance == null || CurrencyManager.Instance.TotalChests < GACHA_COST_CHEST)
         {
-            Debug.LogWarning("Not enough Chests!");
+            Debug.LogWarning("Not enough Chests! Draw cancelled.");
             return null;
         }
 
-        if (EquipmentManager.Instance == null || EquipmentManager.Instance.MasterDB == null)
+        if (EquipmentManager.Instance == null || EquipmentManager.Instance.MasterDB == null || EquipmentManager.Instance.MasterDB.Count == 0)
         {
-            Debug.LogError("Equipment Database is missing!");
+            Debug.LogError("Equipment Database is missing or empty!");
             return null;
         }
 

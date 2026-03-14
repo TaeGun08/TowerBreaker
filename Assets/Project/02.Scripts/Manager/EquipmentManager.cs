@@ -9,12 +9,11 @@ public class EquipmentManager : SingletonBase<EquipmentManager>
     [SerializeField] private string inventorySaveKey = "OwnedEquipment";
     [SerializeField] private string equipPrefix = "Equipped_";
 
-    [Header("Master Database")]
-    [SerializeField] private List<EquipmentData> allEquipmentDatabase; // [중요] 여기에 모든 장비 SO를 넣으세요!
+    [Header("Database (Auto-loaded if empty)")]
+    [SerializeField] private List<EquipmentData> allEquipmentDatabase = new List<EquipmentData>(); 
 
     public List<EquipmentData> MasterDB => allEquipmentDatabase;
 
-    // 런타임 데이터
     private HashSet<string> _ownedEquipmentIds = new HashSet<string>();
     private Dictionary<EquipmentType, string> _equippedEquipment = new Dictionary<EquipmentType, string>();
 
@@ -23,20 +22,40 @@ public class EquipmentManager : SingletonBase<EquipmentManager>
 
     protected override void Awake()
     {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         base.Awake();
-        LoadData();
+        
+        LoadDatabase(); 
+        LoadData();     
+    }
+
+    private void LoadDatabase()
+    {
+        var loaded = Resources.LoadAll<EquipmentData>("Equipment");
+        if (loaded != null && loaded.Length > 0)
+        {
+            allEquipmentDatabase = loaded.ToList();
+            Debug.Log($"<color=green>[EquipmentManager] Database Loaded: {allEquipmentDatabase.Count} items from Resources/Equipment.</color>");
+        }
+        else
+        {
+            Debug.LogError("[EquipmentManager] No assets found in Resources/Equipment! Make sure your SO files are in that folder.");
+        }
     }
 
     private void LoadData()
     {
-        // 1. 보유 목록 로드
         string savedInventory = PlayerPrefs.GetString(inventorySaveKey, "");
         if (!string.IsNullOrEmpty(savedInventory))
         {
             _ownedEquipmentIds = new HashSet<string>(savedInventory.Split(','));
         }
 
-        // 2. 장착 목록 로드
         foreach (EquipmentType type in Enum.GetValues(typeof(EquipmentType)))
         {
             string equippedId = PlayerPrefs.GetString(equipPrefix + type.ToString(), "");
@@ -72,7 +91,6 @@ public class EquipmentManager : SingletonBase<EquipmentManager>
     public void Equip(EquipmentData data)
     {
         if (data == null || !_ownedEquipmentIds.Contains(data.id)) return;
-
         _equippedEquipment[data.type] = data.id;
         SaveData();
         OnEquipmentChanged?.Invoke();
@@ -90,32 +108,33 @@ public class EquipmentManager : SingletonBase<EquipmentManager>
     public EquipmentData GetEquippedItem(EquipmentType type)
     {
         if (_equippedEquipment.TryGetValue(type, out string id))
-        {
             return GetEquipmentById(id);
-        }
         return null;
     }
 
-    public List<EquipmentData> GetOwnedEquipment()
+    public List<EquipmentData> GetOwnedEquipment() => _ownedEquipmentIds.Select(GetEquipmentById).Where(e => e != null).ToList();
+
+    public EquipmentData GetEquipmentById(string id) => allEquipmentDatabase?.FirstOrDefault(e => e.id == id);
+
+    public void ClearAllEquipmentData()
     {
-        return _ownedEquipmentIds.Select(GetEquipmentById).Where(e => e != null).ToList();
+        _ownedEquipmentIds.Clear();
+        _equippedEquipment.Clear();
+        PlayerPrefs.DeleteKey(inventorySaveKey);
+        foreach (EquipmentType type in Enum.GetValues(typeof(EquipmentType))) PlayerPrefs.DeleteKey(equipPrefix + type.ToString());
+        PlayerPrefs.Save();
+        OnInventoryChanged?.Invoke();
+        OnEquipmentChanged?.Invoke();
     }
 
-    public EquipmentData GetEquipmentById(string id)
-    {
-        // 데이터베이스에서 ID로 검색
-        return allEquipmentDatabase?.FirstOrDefault(e => e.id == id);
-    }
-
-    // 장착된 모든 장비의 보너스 스탯 합산
     public (int atk, int def, int hp, float crit, float doubleHit) GetTotalBonuses()
     {
         int atk = 0, def = 0, hp = 0;
         float crit = 0, dbl = 0;
 
-        foreach (var id in _equippedEquipment.Values)
+        foreach (var pair in _equippedEquipment)
         {
-            var data = GetEquipmentById(id);
+            var data = GetEquipmentById(pair.Value);
             if (data != null)
             {
                 atk += data.atkBonus;
@@ -123,6 +142,7 @@ public class EquipmentManager : SingletonBase<EquipmentManager>
                 hp += data.hpBonus;
                 crit += data.critBonus;
                 dbl += data.doubleHitBonus;
+                Debug.Log($"<color=yellow>[EquipmentManager] Bonus Applied: {data.equipmentName} ({data.type})</color>");
             }
         }
         return (atk, def, hp, crit, dbl);

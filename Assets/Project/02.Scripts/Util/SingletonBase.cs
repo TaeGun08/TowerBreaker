@@ -14,20 +14,29 @@ public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
     {
         get
         {
-            if (_applicationIsQuitting) return null;
+            // 앱 종료 중이거나 플레이 모드가 아니면 절대 접근/생성하지 않음
+            if (_applicationIsQuitting || !Application.isPlaying) return null;
 
             lock (_lock)
             {
                 if (_instance != null) return _instance;
 
-                _instance = (T)FindFirstObjectByType(typeof(T));
+                // 씬에서 찾기 시도 (안전한 함수 사용)
+                _instance = (T)Object.FindAnyObjectByType(typeof(T));
 
                 if (_instance != null) return _instance;
 
-                // 인스턴스가 없으면 새로 생성 (이게 없어서 먹통이었음)
-                GameObject singleton = new GameObject();
+                // [수정] 자동 생성 금지 목록: 핵심 매니저 및 UI는 직접 배치된 것만 사용
+                string typeName = typeof(T).Name;
+                if (typeName == "PlayerUnit" || typeName == "InGameUIManager" || 
+                    typeName == "StageManager" || typeName == "OutGameManager")
+                {
+                    return null; 
+                }
+
+                // 그 외 일반 매니저만 자동 생성
+                GameObject singleton = new GameObject($"(singleton) {typeof(T)}");
                 _instance = singleton.AddComponent<T>();
-                singleton.name = "(singleton) " + typeof(T).ToString();
                 
                 return _instance;
             }

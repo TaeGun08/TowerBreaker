@@ -21,6 +21,9 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     [Header("Skill Gacha")]
     [SerializeField] private GameObject skillGachaPanel;
 
+    [Header("Pause Menu")]
+    [SerializeField] private GameObject pausePanel;
+
     [Header("Skill Buttons")]
     [SerializeField] private UISkillButton[] skillButtons; // 인스펙터에서 2개 할당
 
@@ -51,12 +54,18 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
     private void InitializeUI()
     {
-        // 1. 플레이어 정보 초기화
-        if (PlayerUnit.Instance != null)
+        // 1. 플레이어 정보 초기화 (인스턴스 존재 여부 철저히 체크)
+        var player = PlayerUnit.Instance;
+        if (player != null && player.Stats != null)
         {
-            UpdateHP(PlayerUnit.Instance.CurrentHP, PlayerUnit.Instance.Stats.maxHp);
+            UpdateHP(player.CurrentHP, player.Stats.maxHp);
             UpdateStatsDisplay();
             UpdateSkillButtons();
+        }
+        else
+        {
+            // 플레이어가 없는 상황 (아웃게임 등)에서는 기본값 표시 혹은 무시
+            if (hpText != null) hpText.text = "";
         }
 
         // 2. 스테이지 정보 초기화
@@ -103,18 +112,25 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
     private void OnDisable()
     {
-        // 앱 종료 중에는 이벤트 해제를 시도하지 않음 (참조 오류 방지)
-        if (SingletonBase<InGameUIManager>.IsQuitting) return;
-
-        if (PlayerUnit.Instance != null && !SingletonBase<PlayerUnit>.IsQuitting)
+        // 1. 플레이어 유닛 이벤트 해제
+        if (!SingletonBase<PlayerUnit>.IsQuitting)
         {
-            PlayerUnit.Instance.OnHealthChanged -= HandleHealthChanged;
-            PlayerUnit.Instance.OnSkillsUpdated -= UpdateSkillButtons;
+            var player = PlayerUnit.Instance;
+            if (player != null)
+            {
+                player.OnHealthChanged -= HandleHealthChanged;
+                player.OnSkillsUpdated -= UpdateSkillButtons;
+            }
         }
 
-        if (StageManager.Instance != null && !SingletonBase<StageManager>.IsQuitting)
-            StageManager.Instance.OnStageProgress -= HandleStageProgress;
+        // 2. 스테이지 매니저 이벤트 해제
+        if (!SingletonBase<StageManager>.IsQuitting)
+        {
+            var sm = StageManager.Instance;
+            if (sm != null) sm.OnStageProgress -= HandleStageProgress;
+        }
 
+        // 3. 재화 매니저 이벤트 해제
         if (!SingletonBase<CurrencyManager>.IsQuitting)
         {
             var cm = CurrencyManager.Instance;
@@ -221,6 +237,14 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         if (skillGachaPanel != null)
         {
             skillGachaPanel.SetActive(true);
+        }
+    }
+
+    public void ShowPausePanel()
+    {
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(true);
         }
     }
 

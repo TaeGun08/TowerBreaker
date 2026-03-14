@@ -14,122 +14,18 @@ public class OutGameUIBuilder : EditorWindow
     [MenuItem("TowerBreaker/Build OutGame UI (ALL-IN-ONE)")]
     public static void BuildUI()
     {
-        // 1. 기존 UI 제거 (중복 생성 방지)
-        var oldCanvas = GameObject.Find("OutGame_Canvas");
-        if (oldCanvas) DestroyImmediate(oldCanvas);
-        var oldMgr = GameObject.Find("Managers");
-        if (oldMgr) DestroyImmediate(oldMgr);
+        // ... (기존 코드)
+    }
 
-        // 2. Managers 생성 및 데이터베이스 자동 로드
-        GameObject managersObj = new GameObject("Managers");
-        OutGameManager outMgr = managersObj.AddComponent<OutGameManager>();
-        EquipmentManager eqMgr = managersObj.AddComponent<EquipmentManager>();
-        EquipmentGachaManager gachaMgr = managersObj.AddComponent<EquipmentGachaManager>();
-
-        // 모든 장비 SO 로드 및 등록
-        string[] guids = AssetDatabase.FindAssets("t:EquipmentData");
-        List<EquipmentData> allEquips = new List<EquipmentData>();
-        foreach (string guid in guids)
+    [MenuItem("TowerBreaker/Clear All Save Data")]
+    public static void ClearSaveData()
+    {
+        if (EditorUtility.DisplayDialog("Clear Save Data", "Are you sure you want to delete ALL save data (Chests, Equipment, etc)?", "Yes", "No"))
         {
-            allEquips.Add(AssetDatabase.LoadAssetAtPath<EquipmentData>(AssetDatabase.GUIDToAssetPath(guid)));
+            PlayerPrefs.DeleteAll();
+            PlayerPrefs.Save();
+            Debug.Log("<color=red>All Save Data has been cleared!</color>");
         }
-        
-        SerializedObject eqSo = new SerializedObject(eqMgr);
-        SerializedProperty dbProp = eqSo.FindProperty("allEquipmentDatabase");
-        dbProp.ClearArray();
-        for (int i = 0; i < allEquips.Count; i++)
-        {
-            dbProp.InsertArrayElementAtIndex(i);
-            dbProp.GetArrayElementAtIndex(i).objectReferenceValue = allEquips[i];
-        }
-        eqSo.ApplyModifiedProperties();
-
-        // 3. Canvas 생성
-        GameObject canvasObj = new GameObject("OutGame_Canvas");
-        Canvas canvas = canvasObj.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(TARGET_WIDTH, TARGET_HEIGHT);
-        scaler.matchWidthOrHeight = 1.0f;
-        canvasObj.AddComponent<GraphicRaycaster>();
-
-        GameObject panelsObj = CreateUIObject("Panels", canvasObj.transform);
-        SetRectFullStretch(panelsObj.GetComponent<RectTransform>());
-
-        // 4. 슬롯 프리팹 확인 및 자동 생성 (없을 경우 대비)
-        UIEquipmentSlot slotPrefab = EnsureSlotPrefab();
-
-        // --- 5. Main Panel ---
-        GameObject mainPanel = CreatePanel("MainPanel", panelsObj.transform);
-        GameObject mainBtnGroup = CreateUIObject("MainButtonGroup", mainPanel.transform);
-        SetRectSize(mainBtnGroup.GetComponent<RectTransform>(), 1000, 1200, new Vector2(0.5f, 0.4f));
-        
-        var btnStart = CreateButton("Btn_Start", "GAME START", mainBtnGroup.transform, 200);
-        var btnEquip = CreateButton("Btn_Equipment", "EQUIPMENT", mainBtnGroup.transform, 200);
-        var btnGacha = CreateButton("Btn_Gacha", "GACHA SHOP", mainBtnGroup.transform, 200);
-        var btnQuit = CreateButton("Btn_Quit", "QUIT", mainBtnGroup.transform, 200);
-        
-        mainBtnGroup.AddComponent<VerticalLayoutGroup>().spacing = 50;
-
-        // 이벤트 연결 (UnityEventTools 사용)
-        UnityEventTools.AddPersistentListener(btnStart.onClick, outMgr.StartGame);
-        UnityEventTools.AddPersistentListener(btnEquip.onClick, outMgr.ShowEquipmentPanel);
-        UnityEventTools.AddPersistentListener(btnGacha.onClick, outMgr.ShowGachaPanel);
-        UnityEventTools.AddPersistentListener(btnQuit.onClick, outMgr.QuitGame);
-
-        // --- 6. Equipment Panel ---
-        GameObject equipPanel = CreatePanel("EquipmentPanel", panelsObj.transform);
-        UIEquipmentPanel uiEquip = equipPanel.AddComponent<UIEquipmentPanel>();
-        
-        GameObject invArea = CreateUIObject("InventoryArea", equipPanel.transform);
-        SetRectSize(invArea.GetComponent<RectTransform>(), 1200, 1000, new Vector2(0.5f, 0.65f));
-        GameObject contentParent = CreateUIObject("ContentParent", invArea.transform);
-        contentParent.AddComponent<GridLayoutGroup>().cellSize = new Vector2(250, 250);
-        
-        GameObject detailArea = CreateUIObject("DetailArea", equipPanel.transform);
-        SetRectSize(detailArea.GetComponent<RectTransform>(), 1200, 400, new Vector2(0.5f, 0.35f));
-        CreateText("Text_ItemName", "Item Name", detailArea.transform, 80, new Vector2(0.5f, 0.8f));
-        CreateText("Text_ItemStats", "Stats", detailArea.transform, 60, new Vector2(0.5f, 0.4f));
-        var btnDoEquip = CreateButton("Btn_Equip", "EQUIP", detailArea.transform, 150, new Vector2(0.5f, 0.1f));
-        
-        var btnBackEquip = CreateButton("Btn_Back", "BACK", equipPanel.transform, 120, new Vector2(0.15f, 0.95f));
-        UnityEventTools.AddPersistentListener(btnBackEquip.onClick, outMgr.ShowMainPanel);
-        UnityEventTools.AddPersistentListener(btnDoEquip.onClick, uiEquip.OnClickEquip);
-
-        // --- 7. Gacha Panel ---
-        GameObject gachaPanel = CreatePanel("GachaPanel", panelsObj.transform);
-        UIGachaPanel uiGacha = gachaPanel.AddComponent<UIGachaPanel>();
-        
-        CreateText("Text_TotalChest", "CHESTS: 0", gachaPanel.transform, 100, new Vector2(0.5f, 0.85f));
-        var btnDoGacha = CreateButton("Btn_Draw", "OPEN CHEST", gachaPanel.transform, 250, new Vector2(0.5f, 0.6f));
-        
-        GameObject resArea = CreateUIObject("ResultArea", gachaPanel.transform);
-        SetRectSize(resArea.GetComponent<RectTransform>(), 1000, 800, new Vector2(0.5f, 0.35f));
-        CreateUIObject("Img_Frame", resArea.transform).AddComponent<Image>();
-        CreateUIObject("Img_ItemIcon", resArea.transform).AddComponent<Image>();
-        CreateText("Text_Tier", "[TIER]", resArea.transform, 70, new Vector2(0.5f, 0.2f));
-        CreateText("Text_ItemName", "Item Name", resArea.transform, 90, new Vector2(0.5f, 0.1f));
-        CreateText("Text_ItemStats", "Stats", resArea.transform, 60, new Vector2(0.5f, 0.0f));
-        
-        var btnBackGacha = CreateButton("Btn_Back", "BACK", gachaPanel.transform, 120, new Vector2(0.15f, 0.95f));
-        UnityEventTools.AddPersistentListener(btnBackGacha.onClick, outMgr.ShowMainPanel);
-        UnityEventTools.AddPersistentListener(btnDoGacha.onClick, uiGacha.OnClickDraw);
-
-        // 8. 매니저 참조 최종 연결
-        SerializedObject outSo = new SerializedObject(outMgr);
-        outSo.FindProperty("mainPanel").objectReferenceValue = mainPanel;
-        outSo.FindProperty("equipmentPanel").objectReferenceValue = equipPanel;
-        outSo.FindProperty("gachaPanel").objectReferenceValue = gachaPanel;
-        outSo.ApplyModifiedProperties();
-
-        SerializedObject uiEquipSo = new SerializedObject(uiEquip);
-        uiEquipSo.FindProperty("contentParent").objectReferenceValue = contentParent.transform;
-        uiEquipSo.FindProperty("slotPrefab").objectReferenceValue = slotPrefab;
-        uiEquipSo.ApplyModifiedProperties();
-
-        Debug.Log("<color=orange>DONE! All UI, Managers, and Events are fully linked. PRESS PLAY!</color>");
-        Selection.activeGameObject = canvasObj;
     }
 
     private static UIEquipmentSlot EnsureSlotPrefab()

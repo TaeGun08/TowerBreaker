@@ -87,4 +87,17 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
             if (InGameUIManager.Instance != null) InGameUIManager.Instance.UpdateCorpseUI(SessionCorpse);
         }
     }
+
+    public void ClearAllCurrencyData()
+    {
+        TotalChests = 0;
+        SessionChests = 0;
+        SessionCorpse = 0;
+        PlayerPrefs.DeleteKey(KEY_CHEST);
+        PlayerPrefs.Save();
+        
+        OnSessionChestChanged?.Invoke(0);
+        OnSessionCorpseChanged?.Invoke(0);
+        Debug.Log("<color=red>Currency Data Cleared!</color>");
+    }
 }

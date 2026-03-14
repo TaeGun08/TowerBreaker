@@ -82,13 +82,16 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     private void Start()
     {
-        _statsController.OnHealthChanged += (cur, max) => OnHealthChanged?.Invoke(cur, max);
-        _statsController.OnStatUpgraded += (msg) => InGameUIManager.Instance.ShowUpgradeNotice(msg);
+        if (_statsController != null)
+        {
+            _statsController.OnHealthChanged += (cur, max) => OnHealthChanged?.Invoke(cur, max);
+            _statsController.OnStatUpgraded += (msg) => { if (InGameUIManager.Instance != null) InGameUIManager.Instance.ShowUpgradeNotice(msg); };
+        }
         
         if (StageManager.Instance != null)
             StageManager.Instance.OnStageProgress += RespawnAtStart;
 
-        OnHealthChanged?.Invoke(CurrentHP, Stats.maxHp);
+        OnHealthChanged?.Invoke(CurrentHP, Stats != null ? Stats.maxHp : 100);
     }
 
     private void Update()
