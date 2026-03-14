@@ -107,10 +107,15 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         if (StageManager.Instance != null && !SingletonBase<StageManager>.IsQuitting)
             StageManager.Instance.OnStageProgress -= HandleStageProgress;
 
-        if (CurrencyManager.Instance != null && !SingletonBase<CurrencyManager>.IsQuitting)
+        // [수정] SingletonBase의 IsQuitting 플래그를 사용하여 종료 시 접근 방지
+        if (!SingletonBase<CurrencyManager>.IsQuitting)
         {
-            CurrencyManager.Instance.OnSessionCorpseChanged -= UpdateCorpseUI;
-            CurrencyManager.Instance.OnSessionChestChanged -= UpdateChestUI;
+            var cm = CurrencyManager.Instance;
+            if (cm != null)
+            {
+                cm.OnSessionCorpseChanged -= UpdateCorpseUI;
+                cm.OnSessionChestChanged -= UpdateChestUI;
+            }
         }
     }
 

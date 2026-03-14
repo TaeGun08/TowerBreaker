@@ -20,10 +20,10 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     [Header("Combat Settings")]
     [SerializeField] private float attackRange = 1.3f;
-    [SerializeField] private float attackCooldown = 0.25f;
-    [SerializeField] private float guardDuration = 0.7f; // 0.45 -> 0.7 (가드 유지 시간 상향)
-    [SerializeField] private float guardCooldown = 0.3f; // 0.5 -> 0.3 (가드 빈도 상향)
-    [SerializeField] private float guardPushDistance = 1.3f;
+    [SerializeField] private float attackCooldown = 0.7f; // 0.25 -> 0.7 (묵직한 공격)
+    [SerializeField] private float guardDuration = 1.0f; // 0.7 -> 1.0 (가드 상향)
+    [SerializeField] private float guardCooldown = 0.2f; // 0.3 -> 0.2 (가드 빈도 상향)
+    [SerializeField] private float guardPushDistance = 1.6f; // 판정 거리 상향
     [SerializeField] private float playerGuardRecoil = 0.25f;
 
     [Header("Movement Settings")]
@@ -226,33 +226,37 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         if (instance.IsReady) instance.Use(this);
     }
 
+    public void PlaySkillAnimation()
+    {
+        if (animator != null)
+        {
+            animator.SetTrigger(AnimAttackTrigger);
+        }
+    }
+
+    public void SpawnSkillEffect(GameObject prefab, Vector3 positionOffset = default)
+    {
+        if (prefab == null) return;
+        Instantiate(prefab, transform.position + positionOffset, Quaternion.identity);
+    }
+
     private bool CanInput() => !_isDashing && !_isAttacking && !_isGuarding && !_isTransitioning;
 
     private IEnumerator AttackCoroutine()
     {
         _isAttacking = true;
+
         if (animator != null)
         {
             animator.SetTrigger(AnimAttackTrigger);
-            
-            float timeout = 0.6f;
-            float elapsed = 0f;
-            yield return null; 
-            while (elapsed < timeout)
-            {
-                elapsed += Time.deltaTime;
-                var state = animator.GetCurrentAnimatorStateInfo(0);
-                if (state.IsName("Attack") || state.IsName("2_Attack")) 
-                {
-                    if (state.normalizedTime >= 0.1f) break;
-                }
-                yield return null;
-            }
         }
 
+        // [수정] 버튼 입력 후 0.7초 뒤에 실제 타격 판정 발생 (다크나이트와 동일한 템포)
+        yield return new WaitForSeconds(0.7f);
         ProcessAttackLogic();
 
-        yield return new WaitForSeconds(attackCooldown);
+        // 타격 후 아주 짧은 후딜레이 후 공격 가능 상태로 복귀
+        yield return new WaitForSeconds(0.1f);
         _isAttacking = false;
     }
 

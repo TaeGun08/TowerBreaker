@@ -102,8 +102,8 @@ public class Boss_DarkKnight : Monster
         IsMoveStop = true;
         if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         
-        // [수정] 0.8f -> 1.1f: 선딜레이를 늘려 플레이어가 대응할 시간 확보
-        yield return new WaitForSeconds(1.1f); 
+        // [수정] 1.1f -> 0.7f: 플레이어와 동일한 타이밍으로 조정
+        yield return new WaitForSeconds(0.7f); 
 
         if (PlayerUnit.Instance != null)
         {
@@ -116,7 +116,7 @@ public class Boss_DarkKnight : Monster
             }
         }
 
-        yield return new WaitForSeconds(0.7f); // 후딜레이 약간 추가
+        yield return new WaitForSeconds(0.7f); // 후딜레이
         IsMoveStop = false;
     }
 }

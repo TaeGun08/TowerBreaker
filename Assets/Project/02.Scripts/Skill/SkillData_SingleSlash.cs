@@ -10,9 +10,11 @@ public class SkillData_SingleSlash : SkillData
     public override IEnumerator Execute(PlayerUnit player)
     {
         player.IsInvulnerable = true;
+        player.PlaySkillAnimation(); // 공격 애니메이션 재생
 
-        // 약간의 선딜레이
+        // 약간의 선딜레이 후 이펙트 및 타격
         yield return new WaitForSeconds(0.2f);
+        player.SpawnSkillEffect(effectPrefab, Vector3.right * 0.8f); // 이펙트 생성
 
         Swarm swarm = StageManager.Instance?.CurrentSwarm;
         if (swarm != null)

@@ -9,8 +9,9 @@ public class SkillData_HolyShield : SkillData
 
     public override IEnumerator Execute(PlayerUnit player)
     {
+        player.PlaySkillAnimation();
+        player.SpawnSkillEffect(effectPrefab, Vector3.up * 0.5f);
         player.IsInvulnerable = true;
-        // 시각적 효과 (예: 실드 이펙트) 활성화 로직 추가 가능
         
         yield return new WaitForSeconds(duration);
         

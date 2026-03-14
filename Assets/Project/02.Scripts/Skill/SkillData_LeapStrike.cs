@@ -12,6 +12,7 @@ public class SkillData_LeapStrike : SkillData
     public override IEnumerator Execute(PlayerUnit player)
     {
         player.IsInvulnerable = true;
+        player.PlaySkillAnimation(); // 도약 전 모션
 
         Vector3 startPos = player.transform.position;
         Vector3 targetPos = startPos + Vector3.right * jumpDistance;
@@ -27,8 +28,10 @@ public class SkillData_LeapStrike : SkillData
             yield return null;
         }
 
-        // 착지 타격
+        // 착지 타격 및 이펙트
         player.transform.position = targetPos;
+        player.SpawnSkillEffect(effectPrefab, Vector3.zero); // 착지 지점에 이펙트
+
         Swarm swarm = StageManager.Instance?.CurrentSwarm;
         if (swarm != null)
         {

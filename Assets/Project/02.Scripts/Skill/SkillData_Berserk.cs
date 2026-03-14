@@ -9,6 +9,9 @@ public class SkillData_Berserk : SkillData
 
     public override IEnumerator Execute(PlayerUnit player)
     {
+        player.PlaySkillAnimation();
+        player.SpawnSkillEffect(effectPrefab, Vector3.up * 0.5f);
+
         // 버프 효과 시작
         player.StartCoroutine(BerserkEffect(player));
         yield return null;

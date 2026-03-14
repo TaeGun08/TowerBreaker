@@ -89,6 +89,9 @@ public class UISkillGacha : MonoBehaviour
         }
         if (skillTierText != null) skillTierText.color = tierColor;
 
+        // [수정] 안내 메시지 텍스트 위치에 스킬 설명을 표시
+        if (messageText != null) messageText.text = skill.description;
+
         UpdateSlotButtons();
     }
 

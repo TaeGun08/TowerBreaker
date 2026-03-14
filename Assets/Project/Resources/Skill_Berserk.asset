@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: Skill_Berserk
   m_EditorClassIdentifier: Assembly-CSharp::SkillData_Berserk
   icon: {fileID: 21300000, guid: c8db765f8404a794eaf075cab8798c0a, type: 3}
-  cooldown: 0
+  cooldown: 10
+  effectPrefab: {fileID: 8782009059513614302, guid: 171dda363e9efd94ca9bc63e38ca9658, type: 3}
   duration: 10

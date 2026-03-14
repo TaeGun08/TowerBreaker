@@ -11,6 +11,9 @@ public class SkillData_CycloneSlash : SkillData
 
     public override IEnumerator Execute(PlayerUnit player)
     {
+        player.PlaySkillAnimation();
+        player.SpawnSkillEffect(effectPrefab, Vector3.up * 0.5f);
+
         for (int i = 0; i < hitCount; i++)
         {
             Swarm swarm = StageManager.Instance?.CurrentSwarm;

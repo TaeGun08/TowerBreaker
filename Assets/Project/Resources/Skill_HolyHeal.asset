@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: Skill_HolyHeal
   m_EditorClassIdentifier: Assembly-CSharp::SkillData_HolyHeal
   icon: {fileID: 21300000, guid: 55ebcc0240da93849becd22af0acc025, type: 3}
-  cooldown: 0
+  cooldown: 10
+  description: 
+  effectPrefab: {fileID: 2353600328335836179, guid: ceec7516237b4104b94300043ca39784, type: 3}
   healAmount: 20

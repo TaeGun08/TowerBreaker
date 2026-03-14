@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: Skill_SingleSlash
   m_EditorClassIdentifier: Assembly-CSharp::SkillData_SingleSlash
   icon: {fileID: 21300000, guid: 0e1ab67eb67874542b1606233616c377, type: 3}
-  cooldown: 0
+  cooldown: 10
+  description: 
+  effectPrefab: {fileID: 2360655870356088562, guid: 57a776ff377f3c44e8403e2067a4d41f, type: 3}
   damageMultiplier: 2.5

@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Skill_CycloneSlash
   m_EditorClassIdentifier: Assembly-CSharp::SkillData_CycloneSlash
   icon: {fileID: 21300000, guid: f30d24ae22e16d847909033c850ab569, type: 3}
-  cooldown: 0
+  cooldown: 10
+  description: 
+  effectPrefab: {fileID: 8771972552311404799, guid: bbf9e36a48d6c5648a13889afab076fd, type: 3}
   hitCount: 3
   interval: 0.2
   range: 2

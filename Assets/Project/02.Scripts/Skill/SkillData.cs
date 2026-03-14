@@ -10,8 +10,10 @@ public abstract class SkillData : ScriptableObject
 {
     [Header("Skill Settings")]
     public abstract SkillTier Tier { get; } 
-    public Sprite icon; // 아이콘 복구
+    public Sprite icon;
     public float cooldown;
+    [TextArea] public string description; // 스킬 설명 필드 복구
+    public GameObject effectPrefab; 
 
     // 실제 스킬 로직 (상속받아 구현)
     public abstract IEnumerator Execute(PlayerUnit player);
