@@ -2,18 +2,16 @@ using UnityEngine;
 
 public class CurrencyManager : SingletonBase<CurrencyManager>
 {
-    private const string KEY_GOLD = "TotalGold";
     private const string KEY_CHEST = "TotalChests";
 
-    // 영구 저장 데이터
-    public int TotalGold { get; private set; }
+    // 영구 저장 데이터 (체스트만 유지)
     public int TotalChests { get; private set; }
 
-    // 현재 세션(인게임) 데이터 - UI에 표시할 용도
-    public int SessionGold { get; private set; }
+    // 현재 세션(인게임) 재화: Corpse (스킬 뽑기용)
+    public int SessionCorpse { get; private set; }
     public int SessionChests { get; private set; }
 
-    public System.Action<int> OnSessionGoldChanged;
+    public System.Action<int> OnSessionCorpseChanged;
     public System.Action<int> OnSessionChestChanged;
 
     protected override void Awake()
@@ -26,28 +24,31 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
 
     private void LoadTotalData()
     {
-        TotalGold = PlayerPrefs.GetInt(KEY_GOLD, 0);
         TotalChests = PlayerPrefs.GetInt(KEY_CHEST, 0);
     }
 
     public void ResetSessionData()
     {
-        SessionGold = 0;
+        SessionCorpse = 0;
         SessionChests = 0;
-        OnSessionGoldChanged?.Invoke(SessionGold);
+        OnSessionCorpseChanged?.Invoke(SessionCorpse);
         OnSessionChestChanged?.Invoke(SessionChests);
     }
 
-    public void AddGold(int amount)
+    public void AddCorpse(int amount)
     {
-        // 세션 데이터 추가 및 UI 알림
-        SessionGold += amount;
-        OnSessionGoldChanged?.Invoke(SessionGold);
+        // 세션 데이터 추가 및 UI 알림 (인게임 전용)
+        SessionCorpse += amount;
+        OnSessionCorpseChanged?.Invoke(SessionCorpse);
+    }
 
-        // 영구 저장 데이터 업데이트
-        TotalGold += amount;
-        PlayerPrefs.SetInt(KEY_GOLD, TotalGold);
-        PlayerPrefs.Save();
+    public void UseCorpse(int amount)
+    {
+        if (SessionCorpse >= amount)
+        {
+            SessionCorpse -= amount;
+            OnSessionCorpseChanged?.Invoke(SessionCorpse);
+        }
     }
 
     public void AddChest(int count)
@@ -56,7 +57,7 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
         SessionChests += count;
         OnSessionChestChanged?.Invoke(SessionChests);
 
-        // 영구 저장 데이터 업데이트
+        // 영구 저장 데이터 업데이트 (아웃게임 용)
         TotalChests += count;
         PlayerPrefs.SetInt(KEY_CHEST, TotalChests);
         PlayerPrefs.Save();

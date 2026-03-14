@@ -26,7 +26,8 @@ public class Boss_DarkKnight : Monster
         if (!_isPatternRunning && PlayerUnit.Instance != null)
         {
             float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
-            if (sqrDist < 36.0f)
+            // 6.0f -> 8.0f (거리에 상관없이 더 적극적으로 패턴 시작)
+            if (sqrDist < 64.0f) 
             {
                 StartCoroutine(PatternCycle());
             }
@@ -39,7 +40,8 @@ public class Boss_DarkKnight : Monster
 
         while (IsInActiveSwarm())
         {
-            yield return new WaitForSeconds(3.0f);
+            // 패턴 사이 대기 시간 조정 (2.0초 ~ 3.5초 랜덤)
+            yield return new WaitForSeconds(Random.Range(2.0f, 3.5f));
 
             if (PlayerUnit.Instance != null && PlayerUnit.Instance.IsTransitioning)
             {
@@ -58,16 +60,19 @@ public class Boss_DarkKnight : Monster
         IsMoveStop = true; 
         if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         
+        // 돌진 전 예비 동작 (뒤로 살짝 물러남)
         Vector3 startPos = transform.position;
         Vector3 backPos = startPos + Vector3.right * 0.5f;
         
         float t = 0;
         while (t < 1)
         {
-            t += Time.deltaTime * 2;
+            t += Time.deltaTime * 2.5f; // 예비 동작 속도 약간 증가
             transform.position = Vector3.Lerp(startPos, backPos, t);
             yield return null;
         }
+
+        yield return new WaitForSeconds(0.3f); // 돌진 직전 멈춤 (긴장감)
 
         Vector3 dashTarget = transform.position + Vector3.left * dashDistance;
         t = 0;
@@ -96,7 +101,9 @@ public class Boss_DarkKnight : Monster
     {
         IsMoveStop = true;
         if (animator != null) animator.SetTrigger(AnimAttackTrigger);
-        yield return new WaitForSeconds(0.8f);
+        
+        // [수정] 0.8f -> 1.1f: 선딜레이를 늘려 플레이어가 대응할 시간 확보
+        yield return new WaitForSeconds(1.1f); 
 
         if (PlayerUnit.Instance != null)
         {
@@ -109,7 +116,7 @@ public class Boss_DarkKnight : Monster
             }
         }
 
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.7f); // 후딜레이 약간 추가
         IsMoveStop = false;
     }
 }

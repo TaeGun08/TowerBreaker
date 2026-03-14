@@ -8,7 +8,7 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     [SerializeField] private TextMeshProUGUI hpText;
 
     [Header("Currency Info")]
-    [SerializeField] private TextMeshProUGUI goldText; 
+    [SerializeField] private TextMeshProUGUI corpseText; 
     [SerializeField] private TextMeshProUGUI chestText; 
 
     [Header("Stage Info")]
@@ -17,6 +17,12 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     [Header("Stat Info")]
     [SerializeField] private TextMeshProUGUI statsText; 
     [SerializeField] private TextMeshProUGUI upgradeNoticeText; 
+
+    [Header("Skill Gacha")]
+    [SerializeField] private GameObject skillGachaPanel;
+
+    [Header("Skill Buttons")]
+    [SerializeField] private UISkillButton[] skillButtons; // 인스펙터에서 2개 할당
 
     [Header("Damage Font Settings")]
     [SerializeField] private DamageText damageTextPrefab;
@@ -49,6 +55,7 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         {
             UpdateHP(PlayerUnit.Instance.CurrentHP, PlayerUnit.Instance.Stats.maxHp);
             UpdateStatsDisplay();
+            UpdateSkillButtons(); // 스킬 버튼 초기화
         }
 
         if (StageManager.Instance != null)
@@ -56,33 +63,35 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
             UpdateStageText(StageManager.Instance.StageCount);
         }
 
-        // 인게임 UI는 항상 0부터 시작 (세션 데이터 기반)
         if (CurrencyManager.Instance != null)
         {
-            UpdateGoldUI(CurrencyManager.Instance.SessionGold);
+            UpdateCorpseUI(CurrencyManager.Instance.SessionCorpse);
             UpdateChestUI(CurrencyManager.Instance.SessionChests);
         }
         else
         {
-            UpdateGoldUI(0);
+            UpdateCorpseUI(0);
             UpdateChestUI(0);
         }
 
         if (upgradeNoticeText != null) upgradeNoticeText.gameObject.SetActive(false);
+        if (skillGachaPanel != null) skillGachaPanel.SetActive(false);
     }
 
     private void OnEnable()
     {
         if (PlayerUnit.Instance != null)
+        {
             PlayerUnit.Instance.OnHealthChanged += HandleHealthChanged;
+            PlayerUnit.Instance.OnSkillsUpdated += UpdateSkillButtons; // 스킬 갱신 이벤트 구독
+        }
 
         if (StageManager.Instance != null)
             StageManager.Instance.OnStageProgress += HandleStageProgress;
 
-        // 세션 전용 이벤트 구독
         if (CurrencyManager.Instance != null)
         {
-            CurrencyManager.Instance.OnSessionGoldChanged += UpdateGoldUI;
+            CurrencyManager.Instance.OnSessionCorpseChanged += UpdateCorpseUI;
             CurrencyManager.Instance.OnSessionChestChanged += UpdateChestUI;
         }
     }
@@ -90,15 +99,38 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     private void OnDisable()
     {
         if (PlayerUnit.Instance != null && !SingletonBase<PlayerUnit>.IsQuitting)
+        {
             PlayerUnit.Instance.OnHealthChanged -= HandleHealthChanged;
+            PlayerUnit.Instance.OnSkillsUpdated -= UpdateSkillButtons;
+        }
 
         if (StageManager.Instance != null && !SingletonBase<StageManager>.IsQuitting)
             StageManager.Instance.OnStageProgress -= HandleStageProgress;
 
         if (CurrencyManager.Instance != null && !SingletonBase<CurrencyManager>.IsQuitting)
         {
-            CurrencyManager.Instance.OnSessionGoldChanged -= UpdateGoldUI;
+            CurrencyManager.Instance.OnSessionCorpseChanged -= UpdateCorpseUI;
             CurrencyManager.Instance.OnSessionChestChanged -= UpdateChestUI;
+        }
+    }
+
+    public void UpdateSkillButtons()
+    {
+        if (skillButtons == null || PlayerUnit.Instance == null) return;
+
+        var currentSkills = PlayerUnit.Instance.CurrentSkills;
+        for (int i = 0; i < skillButtons.Length; i++)
+        {
+            if (skillButtons[i] == null) continue;
+            
+            if (i < currentSkills.Count)
+            {
+                skillButtons[i].SetSkill(currentSkills[i]);
+            }
+            else
+            {
+                skillButtons[i].SetSkill(null);
+            }
         }
     }
 
@@ -118,9 +150,9 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
                          $"<b>DBL</b>  {Mathf.RoundToInt(s.doubleHitChance * 100)}%";
     }
 
-    public void UpdateGoldUI(int gold)
+    public void UpdateCorpseUI(int corpse)
     {
-        if (goldText != null) goldText.text = gold.ToString();
+        if (corpseText != null) corpseText.text = corpse.ToString();
     }
 
     public void UpdateChestUI(int chests)
@@ -169,6 +201,14 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         if (stageText != null)
         {
             stageText.text = $"FLOOR {stage + 1}";
+        }
+    }
+
+    public void ShowSkillGachaPanel()
+    {
+        if (skillGachaPanel != null)
+        {
+            skillGachaPanel.SetActive(true);
         }
     }
 

@@ -82,14 +82,20 @@ public class StageManager : SingletonBase<StageManager>
         }
 
         bool wasBoss = ((StageCount + 1) % 5 == 0); 
-        NextStage(wasBoss);
         
-        if (!wasBoss && PlayerUnit.Instance != null)
+        // 보스 클리어 시 스킬 뽑기 오픈 (게임 일시 정지 및 UI 팝업)
+        if (wasBoss && SkillGachaManager.Instance != null)
         {
+            SkillGachaManager.Instance.OpenGachaUI();
+        }
+        else if (!wasBoss && PlayerUnit.Instance != null)
+        {
+            // 일반 스테이지는 기존처럼 랜덤 스탯 강화
             string msg = PlayerUnit.Instance.UpgradeRandomStat();
             if (InGameUIManager.Instance != null) InGameUIManager.Instance.ShowUpgradeNotice(msg);
         }
         
+        NextStage(wasBoss);
         yield return new WaitForSeconds(0.5f); 
         IsTransitioning = false;
     }

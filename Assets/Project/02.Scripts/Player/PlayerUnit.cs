@@ -21,8 +21,8 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     [Header("Combat Settings")]
     [SerializeField] private float attackRange = 1.3f;
     [SerializeField] private float attackCooldown = 0.25f;
-    [SerializeField] private float guardDuration = 0.45f; 
-    [SerializeField] private float guardCooldown = 0.5f; 
+    [SerializeField] private float guardDuration = 0.7f; // 0.45 -> 0.7 (가드 유지 시간 상향)
+    [SerializeField] private float guardCooldown = 0.3f; // 0.5 -> 0.3 (가드 빈도 상향)
     [SerializeField] private float guardPushDistance = 1.3f;
     [SerializeField] private float playerGuardRecoil = 0.25f;
 
@@ -42,12 +42,15 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     public PlayerStats Stats => _statsController.CurrentStats;
     public event Action<int, int> OnHealthChanged;
 
-    private bool _isDashing, _isAttacking, _isGuarding, _isTransitioning, _isUsingSkill, _isDashCooldown, _isGuardCooldown;
+    private bool _isDashing, _isAttacking, _isGuarding, _isTransitioning, _isDashCooldown, _isGuardCooldown;
     public bool IsTransitioning => _isTransitioning;
     public bool IsInvulnerable { get; set; }
     public bool IsActionActive => _isDashing || _isGuarding;
 
-    private readonly List<SkillBase> _skills = new List<SkillBase>();
+    private readonly List<SkillInstance> _skills = new List<SkillInstance>();
+    public IReadOnlyList<SkillInstance> CurrentSkills => _skills;
+    public event Action OnSkillsUpdated;
+
     private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
     private static readonly int AnimMoveTrigger = Animator.StringToHash("1_Move");
     private static readonly int AnimGuardTrigger = Animator.StringToHash("4_Guard");
@@ -59,7 +62,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         _feedback = GetComponent<VisualFeedback>();
         _statsController = GetComponent<PlayerStatsController>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
-        InitializeSkills();
     }
 
     private void Start()
@@ -83,12 +85,24 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         if (!_isTransitioning) ClampPosition();
     }
 
-    private void InitializeSkills()
+    public bool AddSkill(SkillData data)
     {
-        _skills.Clear();
-        _skills.Add(new Skill_LeapStrike());
-        _skills.Add(new Skill_CycloneSlash());
-        _skills.Add(new Skill_HolyShield());
+        if (_skills.Count < 2)
+        {
+            _skills.Add(new SkillInstance(data));
+            OnSkillsUpdated?.Invoke();
+            return true;
+        }
+        return false;
+    }
+
+    public void ReplaceSkill(int index, SkillData newData)
+    {
+        if (index >= 0 && index < _skills.Count)
+        {
+            _skills[index] = new SkillInstance(newData);
+            OnSkillsUpdated?.Invoke();
+        }
     }
 
     #region Interaction & Combat
@@ -208,18 +222,11 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     public void UseSkill(int index)
     {
         if (!CanInput() || index < 0 || index >= _skills.Count) return;
-        SkillBase skill = _skills[index];
-        if (skill.IsReady) StartCoroutine(SkillSequence(skill));
+        SkillInstance instance = _skills[index];
+        if (instance.IsReady) instance.Use(this);
     }
 
-    private IEnumerator SkillSequence(SkillBase skill)
-    {
-        _isUsingSkill = true;
-        yield return StartCoroutine(skill.Execute(this));
-        _isUsingSkill = false;
-    }
-
-    private bool CanInput() => !_isDashing && !_isAttacking && !_isGuarding && !_isTransitioning && !_isUsingSkill;
+    private bool CanInput() => !_isDashing && !_isAttacking && !_isGuarding && !_isTransitioning;
 
     private IEnumerator AttackCoroutine()
     {
@@ -228,7 +235,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         {
             animator.SetTrigger(AnimAttackTrigger);
             
-            float timeout = 0.5f;
+            float timeout = 0.6f;
             float elapsed = 0f;
             yield return null; 
             while (elapsed < timeout)
@@ -237,14 +244,14 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
                 var state = animator.GetCurrentAnimatorStateInfo(0);
                 if (state.IsName("Attack") || state.IsName("2_Attack")) 
                 {
-                    // 0.45f -> 0.38f: 판정을 약간 더 앞당겨 반응성 강화
-                    if (state.normalizedTime >= 0.38f) break;
+                    if (state.normalizedTime >= 0.1f) break;
                 }
                 yield return null;
             }
         }
 
         ProcessAttackLogic();
+
         yield return new WaitForSeconds(attackCooldown);
         _isAttacking = false;
     }
@@ -424,7 +431,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     private void RespawnAtStart()
     {
         StopAllCoroutines();
-        _isDashing = _isAttacking = _isGuarding = _isUsingSkill = _isDashCooldown = _isGuardCooldown = false;
+        _isDashing = _isAttacking = _isGuarding = _isDashCooldown = _isGuardCooldown = false;
         StartCoroutine(RespawnAtNewFloor());
     }
 

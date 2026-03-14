@@ -46,10 +46,10 @@ public class Corpse : MonoBehaviour
         if (UIAbsorber.Instance != null)
         {
             UIAbsorber.Instance.Absorb(gameObject, false, () => {
-                // [수정]: 보스였을 때만 골드 추가
-                if (_originType == MonsterType.Boss && CurrencyManager.Instance != null)
+                if (CurrencyManager.Instance != null)
                 {
-                    CurrencyManager.Instance.AddGold(100); // 보스 골드 보상
+                    int reward = _originType == MonsterType.Boss ? 150 : 20;
+                    CurrencyManager.Instance.AddCorpse(reward);
                 }
             });
         }

@@ -32,7 +32,8 @@ public abstract class Monster : MonoBehaviour, IDamageable
     protected int currentFloorCount;
     private bool _isDead;
     protected VisualFeedback feedback;
-    protected Animator animator; 
+    protected Animator animator;
+    private Coroutine _knockbackCoroutine; 
 
     protected virtual void Awake()
     {
@@ -97,8 +98,10 @@ public abstract class Monster : MonoBehaviour, IDamageable
     public void Knockback(float distance, float duration)
     {
         if (_isDead) return;
-        StopAllCoroutines(); // 기존 이동이나 넉백 중단
-        StartCoroutine(KnockbackCoroutine(distance, duration));
+        
+        // [수정] StopAllCoroutines 대신 전용 코루틴만 중단하여 보스 패턴 유지
+        if (_knockbackCoroutine != null) StopCoroutine(_knockbackCoroutine);
+        _knockbackCoroutine = StartCoroutine(KnockbackCoroutine(distance, duration));
     }
 
     private IEnumerator KnockbackCoroutine(float distance, float duration)
@@ -114,6 +117,7 @@ public abstract class Monster : MonoBehaviour, IDamageable
             transform.position = Vector3.Lerp(startPos, targetPos, easeOut);
             yield return null;
         }
+        _knockbackCoroutine = null;
     }
 
     protected void Die()
