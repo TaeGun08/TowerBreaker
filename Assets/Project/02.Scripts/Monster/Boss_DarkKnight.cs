@@ -12,16 +12,16 @@ public class Boss_DarkKnight : Monster
     private bool _isPatternRunning = false;
     private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
 
-    protected virtual void Update()
+    protected override void Update()
     {
+        base.Update();
+
         // 현재 활성화된 군집이 아니면 행동 중지
         if (!IsInActiveSwarm())
         {
             IsMoveStop = true;
             return;
         }
-
-        // Monster.Update()는 이제 존재하지 않으므로 호출하지 않음 (Swarm에서 처리)
 
         if (!_isPatternRunning && PlayerUnit.Instance != null)
         {

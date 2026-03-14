@@ -159,23 +159,10 @@ public class Swarm : MonoBehaviour
 
         foreach (var m in _monsters)
         {
-            if (m != null) StartCoroutine(IndividualKnockback(m, distance, duration));
-        }
-    }
-
-    private IEnumerator IndividualKnockback(Monster m, float distance, float duration)
-    {
-        float elapsed = 0f;
-        Vector3 startPos = m.transform.position;
-        Vector3 targetPos = startPos + Vector3.right * distance;
-        while (elapsed < duration)
-        {
-            if (m == null) yield break;
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            float easeOut = 1f - (1f - t) * (1f - t);
-            m.transform.position = Vector3.Lerp(startPos, targetPos, easeOut);
-            yield return null;
+            if (m != null && m.Type != MonsterType.Boss)
+            {
+                m.Knockback(distance, duration);
+            }
         }
     }
 

@@ -43,6 +43,9 @@ public class StageManager : SingletonBase<StageManager>
 
     private void HandleSwarmCleared()
     {
+        // [추가] 스테이지 클리어 시 체력 5 회복
+        if (PlayerUnit.Instance != null) PlayerUnit.Instance.Heal(5);
+
         if (StageCount >= maxStageCount - 1)
         {
             OnGameClear?.Invoke();

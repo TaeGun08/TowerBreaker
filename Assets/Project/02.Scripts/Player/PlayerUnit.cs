@@ -101,8 +101,9 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
         if (IsActionActive)
         {
-            // 방어 피드백 (투사체/마법 여부 전달)
-            ApplyBlockFeedback(isProjectile: isProjectile, isDashing: _isDashing);
+            // 방어 피드백 (현재 가장 앞에 있는 적을 대상으로 판정)
+            Monster target = StageManager.Instance?.CurrentSwarm?.GetFrontMonster();
+            ApplyBlockFeedback(target, isProjectile: isProjectile, isDashing: _isDashing);
             return;
         }
 
@@ -112,7 +113,12 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         if (CurrentHP <= 0) Die();
     }
 
-    private void ApplyBlockFeedback(bool isProjectile, bool isDashing = false)
+    public void Heal(int amount)
+    {
+        _statsController.Heal(amount);
+    }
+
+    private void ApplyBlockFeedback(Monster target, bool isProjectile, bool isDashing = false)
     {
         TriggerCombatJuice(0.05f, 0.05f, 0.05f);
         OnDeflectSuccess(transform.position + Vector3.right * 0.2f);
@@ -125,7 +131,16 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         // [중요] 화살이나 마법(isProjectile)을 막았을 때는 적 보스나 군집을 밀어내지 않음
         if (!isProjectile)
         {
-            StageManager.Instance?.CurrentSwarm?.Knockback(guardPushDistance, 0.2f);
+            if (target != null && target.Type == MonsterType.Boss)
+            {
+                // 보스는 단독으로 넉백 (따로 적용)
+                target.Knockback(guardPushDistance, 0.2f);
+            }
+            else
+            {
+                // 일반 몬스터는 군집 단위로 넉백 (미니언들만 밀림)
+                StageManager.Instance?.CurrentSwarm?.Knockback(guardPushDistance, 0.2f);
+            }
         }
     }
 
@@ -157,7 +172,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             if (_isGuarding)
             {
                 // 접촉 데미지는 근접 공격이므로 isProjectile = false
-                ApplyBlockFeedback(isProjectile: false, isDashing: false);
+                ApplyBlockFeedback(front, isProjectile: false, isDashing: false);
                 return; 
             }
 
@@ -222,7 +237,8 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
                 var state = animator.GetCurrentAnimatorStateInfo(0);
                 if (state.IsName("Attack") || state.IsName("2_Attack")) 
                 {
-                    if (state.normalizedTime >= 0.3f) break;
+                    // 0.45f -> 0.38f: 판정을 약간 더 앞당겨 반응성 강화
+                    if (state.normalizedTime >= 0.38f) break;
                 }
                 yield return null;
             }
@@ -237,7 +253,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     {
         if (DeflectProjectilesInRange(attackRange))
         {
-            ApplyBlockFeedback(isProjectile: true, isDashing: false);
+            ApplyBlockFeedback(null, isProjectile: true, isDashing: false);
         }
 
         Swarm swarm = StageManager.Instance?.CurrentSwarm;
@@ -273,7 +289,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             
             if (DeflectProjectilesInRange(0.5f))
             {
-                ApplyBlockFeedback(isProjectile: true, isDashing: true);
+                ApplyBlockFeedback(null, isProjectile: true, isDashing: true);
             }
 
             transform.position = nextPos;
@@ -301,7 +317,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             Monster front = swarm.GetFrontMonster();
             if (front != null && (front.transform.position.x - transform.position.x) <= contactDamageRange + 0.3f)
             {
-                ApplyBlockFeedback(isProjectile: false, isDashing: false);
+                ApplyBlockFeedback(front, isProjectile: false, isDashing: false);
             }
         }
 
@@ -311,7 +327,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             elapsed += Time.deltaTime;
             if (DeflectProjectilesInRange(attackRange))
             {
-                ApplyBlockFeedback(isProjectile: true, isDashing: false);
+                ApplyBlockFeedback(null, isProjectile: true, isDashing: false);
             }
             yield return null;
         }
@@ -361,8 +377,8 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     public void OnDeflectSuccess(Vector3 position)
     {
-        GameObject prefab = _isGuarding ? guardEffectPrefab : (_isAttacking ? attackEffectPrefab : dashEffectPrefab);
-        SpawnEffect(prefab, position);
+        // 중복 방지를 위해 스파크(가드) 이펙트로 통일
+        SpawnEffect(guardEffectPrefab, position);
     }
 
     private void SpawnEffect(GameObject prefab, Vector3 position)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public enum MonsterType
@@ -91,6 +92,28 @@ public abstract class Monster : MonoBehaviour, IDamageable
 
         if (feedback != null) feedback.PlayHitEffect();
         if (CurrentHP <= 0) Die();
+    }
+
+    public void Knockback(float distance, float duration)
+    {
+        if (_isDead) return;
+        StopAllCoroutines(); // 기존 이동이나 넉백 중단
+        StartCoroutine(KnockbackCoroutine(distance, duration));
+    }
+
+    private IEnumerator KnockbackCoroutine(float distance, float duration)
+    {
+        float elapsed = 0f;
+        Vector3 startPos = transform.position;
+        Vector3 targetPos = startPos + Vector3.right * distance;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float easeOut = 1f - (1f - t) * (1f - t);
+            transform.position = Vector3.Lerp(startPos, targetPos, easeOut);
+            yield return null;
+        }
     }
 
     protected void Die()
