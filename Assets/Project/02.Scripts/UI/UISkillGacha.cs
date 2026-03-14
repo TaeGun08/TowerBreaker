@@ -25,7 +25,7 @@ public class UISkillGacha : MonoBehaviour
     [SerializeField] private Button skipButton;
 
     private SkillData _drawnSkill;
-    private const int GACHA_COST = 100;
+    private const int GACHA_COST = 1000; // 가격 인상
 
     private void Awake()
     {
@@ -43,10 +43,22 @@ public class UISkillGacha : MonoBehaviour
 
     private void ResetUI()
     {
+        _drawnSkill = null;
         if (costText != null) costText.text = $"{GACHA_COST} Corpse";
-        if (drawButton != null) drawButton.gameObject.SetActive(true);
+        
+        // 메인 뽑기 버튼 초기화
+        if (drawButton != null) 
+        {
+            drawButton.gameObject.SetActive(true);
+            drawButton.interactable = true;
+            var btnText = drawButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (btnText != null) btnText.text = "Draw Skill";
+        }
+
+        // 결과 및 선택 영역 초기화 (비활성화)
         if (resultArea != null) resultArea.SetActive(false);
         if (selectionArea != null) selectionArea.SetActive(false);
+        
         if (messageText != null) messageText.text = "Spend Corpse to find a new skill!";
     }
 
@@ -60,6 +72,11 @@ public class UISkillGacha : MonoBehaviour
 
         CurrencyManager.Instance.UseCorpse(GACHA_COST);
         _drawnSkill = SkillGachaManager.Instance.DrawRandomSkill();
+        
+        // 다시 뽑기 시 이전 결과 영역을 껐다 켜서 갱신 보장
+        if (resultArea != null) resultArea.SetActive(false);
+        if (selectionArea != null) selectionArea.SetActive(false);
+
         ShowResult(_drawnSkill);
     }
 
@@ -67,10 +84,18 @@ public class UISkillGacha : MonoBehaviour
     {
         if (skill == null) return;
         
-        if (drawButton != null) drawButton.gameObject.SetActive(false);
+        // 1. 뽑기 버튼 텍스트 변경
+        if (drawButton != null)
+        {
+            var btnText = drawButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (btnText != null) btnText.text = $"Reroll ({GACHA_COST})";
+        }
+
+        // 2. 부모 영역들 강제 활성화 (중요!)
         if (resultArea != null) resultArea.SetActive(true);
         if (selectionArea != null) selectionArea.SetActive(true);
 
+        // 3. 내용 표시
         if (drawnSkillIcon != null)
         {
             drawnSkillIcon.sprite = skill.icon;
@@ -79,7 +104,6 @@ public class UISkillGacha : MonoBehaviour
 
         if (skillTierText != null) skillTierText.text = $"[{skill.Tier.ToString().ToUpper()}]";
 
-        // 등급별 색상 적용
         Color tierColor = Color.white;
         switch (skill.Tier)
         {
@@ -89,9 +113,9 @@ public class UISkillGacha : MonoBehaviour
         }
         if (skillTierText != null) skillTierText.color = tierColor;
 
-        // [수정] 안내 메시지 텍스트 위치에 스킬 설명을 표시
         if (messageText != null) messageText.text = skill.description;
 
+        // 4. 슬롯 버튼들 활성화
         UpdateSlotButtons();
     }
 
@@ -100,33 +124,57 @@ public class UISkillGacha : MonoBehaviour
         if (PlayerUnit.Instance == null) return;
         var currentSkills = PlayerUnit.Instance.CurrentSkills;
 
+        // [수정] 버튼과 아이콘의 GameObject를 절대 끄지 않음 (항상 보이도록 유지)
+        
         // 슬롯 1 설정
         if (slot1Button != null)
         {
+            slot1Button.gameObject.SetActive(true);
+            slot1Button.interactable = true;
+            
             bool hasSkill = currentSkills.Count > 0;
             var tmp = slot1Button.GetComponentInChildren<TextMeshProUGUI>();
             if (tmp != null) tmp.text = hasSkill ? "Replace Slot 1" : "Equip to Slot 1";
             
             if (slot1Icon != null)
             {
-                slot1Icon.gameObject.SetActive(hasSkill);
+                slot1Icon.gameObject.SetActive(true); // 항상 켬
                 if (hasSkill && currentSkills[0] != null && currentSkills[0].Data != null) 
+                {
                     slot1Icon.sprite = currentSkills[0].Data.icon;
+                    slot1Icon.color = Color.white;
+                }
+                else
+                {
+                    slot1Icon.sprite = null;
+                    slot1Icon.color = new Color(1, 1, 1, 0); // 스킬 없으면 투명하게
+                }
             }
         }
 
         // 슬롯 2 설정
         if (slot2Button != null)
         {
+            slot2Button.gameObject.SetActive(true);
+            slot2Button.interactable = true;
+            
             bool hasSkill = currentSkills.Count > 1;
             var tmp = slot2Button.GetComponentInChildren<TextMeshProUGUI>();
             if (tmp != null) tmp.text = hasSkill ? "Replace Slot 2" : "Equip to Slot 2";
             
             if (slot2Icon != null)
             {
-                slot2Icon.gameObject.SetActive(hasSkill);
+                slot2Icon.gameObject.SetActive(true); // 항상 켬
                 if (hasSkill && currentSkills[1] != null && currentSkills[1].Data != null) 
+                {
                     slot2Icon.sprite = currentSkills[1].Data.icon;
+                    slot2Icon.color = Color.white;
+                }
+                else
+                {
+                    slot2Icon.sprite = null;
+                    slot2Icon.color = new Color(1, 1, 1, 0); // 스킬 없으면 투명하게
+                }
             }
         }
     }

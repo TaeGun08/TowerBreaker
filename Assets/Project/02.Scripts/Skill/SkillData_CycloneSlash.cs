@@ -6,6 +6,11 @@ public class SkillData_CycloneSlash : SkillData
 {
     public override SkillTier Tier => SkillTier.Epic;
     public int hitCount = 3;
+
+    private void OnEnable()
+    {
+        description = "Spin rapidly to damage all nearby enemies 3 times.";
+    }
     public float interval = 0.2f;
     public float range = 2.0f;
 

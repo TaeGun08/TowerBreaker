@@ -10,6 +10,8 @@ public enum MonsterType
 
 public abstract class Monster : MonoBehaviour, IDamageable
 {
+    #region Serialized Fields
+
     [Header("Monster Status")]
     [SerializeField] protected MonsterType type; 
     [SerializeField] protected int hp = 30;
@@ -18,6 +20,10 @@ public abstract class Monster : MonoBehaviour, IDamageable
     [Header("Visual Effects")]
     [SerializeField] private Corpse[] corpse; 
     [SerializeField] private RewardChest chestPrefab; 
+
+    #endregion
+
+    #region Properties & Events
 
     public event Action<Monster> OnDie;
     public int CurrentHP { get; private set; }
@@ -29,11 +35,19 @@ public abstract class Monster : MonoBehaviour, IDamageable
     // 모든 몬스터의 개별 정지 거리 (0.7f로 통일)
     public virtual float StopDistance => 0.7f;
 
+    #endregion
+
+    #region Private Fields
+
     protected int currentFloorCount;
     private bool _isDead;
     protected VisualFeedback feedback;
     protected Animator animator;
     private Coroutine _knockbackCoroutine; 
+
+    #endregion
+
+    #region Lifecycle
 
     protected virtual void Awake()
     {
@@ -41,6 +55,16 @@ public abstract class Monster : MonoBehaviour, IDamageable
         feedback = GetComponent<VisualFeedback>();
         animator = GetComponentInChildren<Animator>();
     }
+
+    protected virtual void Update()
+    {
+        if (!CanMove()) return;
+        HandleMovement();
+    }
+
+    #endregion
+
+    #region Movement & Logic
 
     public void SetDifficulty(int floorCount)
     {
@@ -51,27 +75,17 @@ public abstract class Monster : MonoBehaviour, IDamageable
         CurrentHP = hp;
     }
 
-    protected bool IsInActiveSwarm()
+    protected virtual bool CanMove()
     {
-        return StageManager.Instance != null && StageManager.Instance.CurrentSwarm == MySwarm;
-    }
+        if (PlayerUnit.Instance == null || !IsInActiveSwarm() || IsMoveStop || _isDead) return false;
+        if (PlayerUnit.Instance.IsTransitioning) return false;
 
-    protected virtual void Update()
-    {
-        if (PlayerUnit.Instance == null || !IsInActiveSwarm() || IsMoveStop || _isDead) return;
-        if (PlayerUnit.Instance.IsTransitioning) return;
+        if (type != MonsterType.Boss)
+        {
+            if (MySwarm == null || !MySwarm.CanMinionsMove) return false;
+        }
 
-        if (type == MonsterType.Boss)
-        {
-            HandleMovement();
-        }
-        else
-        {
-            if (MySwarm != null && MySwarm.CanMinionsMove)
-            {
-                HandleMovement();
-            }
-        }
+        return true;
     }
 
     protected virtual void HandleMovement()
@@ -82,6 +96,15 @@ public abstract class Monster : MonoBehaviour, IDamageable
             transform.Translate(Vector3.left * (moveSpeed * Time.deltaTime));
         }
     }
+
+    protected bool IsInActiveSwarm()
+    {
+        return StageManager.Instance != null && StageManager.Instance.CurrentSwarm == MySwarm;
+    }
+
+    #endregion
+
+    #region Damage & Health
 
     public virtual void TakeDamage(int damage, bool isCrit = false, bool isProjectile = false)
     {
@@ -99,7 +122,6 @@ public abstract class Monster : MonoBehaviour, IDamageable
     {
         if (_isDead) return;
         
-        // [수정] StopAllCoroutines 대신 전용 코루틴만 중단하여 보스 패턴 유지
         if (_knockbackCoroutine != null) StopCoroutine(_knockbackCoroutine);
         _knockbackCoroutine = StartCoroutine(KnockbackCoroutine(distance, duration));
     }
@@ -120,11 +142,19 @@ public abstract class Monster : MonoBehaviour, IDamageable
         _knockbackCoroutine = null;
     }
 
-    protected void Die()
+    protected virtual void Die()
     {
         if (_isDead) return;
         _isDead = true;
 
+        SpawnRewards();
+
+        OnDie?.Invoke(this);
+        Destroy(gameObject);
+    }
+
+    private void SpawnRewards()
+    {
         if (type == MonsterType.Boss && chestPrefab != null)
             Instantiate(chestPrefab, transform.position, Quaternion.identity);
 
@@ -132,16 +162,12 @@ public abstract class Monster : MonoBehaviour, IDamageable
         {
             foreach (var corpPrefab in corpse)
             {
-                if (corpPrefab != null)
-                {
-                    Corpse instance = Instantiate(corpPrefab, transform.position, Quaternion.identity);
-                    // 시체에게 원본 몬스터 타입 전달 (보상 판정용)
-                    instance.Setup(type);
-                }
+                if (corpPrefab == null) continue;
+                Corpse instance = Instantiate(corpPrefab, transform.position, Quaternion.identity);
+                instance.Setup(type);
             }
         }
-
-        OnDie?.Invoke(this);
-        Destroy(gameObject);
     }
+
+    #endregion
 }

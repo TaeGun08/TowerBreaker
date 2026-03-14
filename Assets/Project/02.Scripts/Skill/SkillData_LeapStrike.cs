@@ -5,6 +5,11 @@ using UnityEngine;
 public class SkillData_LeapStrike : SkillData
 {
     public override SkillTier Tier => SkillTier.Epic;
+
+    private void OnEnable()
+    {
+        description = "Jump high and smash the ground, dealing AoE damage upon landing.";
+    }
     public float jumpHeight = 2.0f;
     public float jumpDistance = 1.0f;
     public float damageMultiplier = 2.0f;
@@ -24,7 +29,16 @@ public class SkillData_LeapStrike : SkillData
             t += Time.deltaTime * 2.5f;
             Vector3 m1 = Vector3.Lerp(startPos, peakPos, t);
             Vector3 m2 = Vector3.Lerp(peakPos, targetPos, t);
-            player.transform.position = Vector3.Lerp(m1, m2, t);
+            Vector3 nextPos = Vector3.Lerp(m1, m2, t);
+
+            // [추가] 몬스터 뒤로 넘어가지 않도록 실시간 체크
+            if (player.IsMonsterAhead(nextPos, 0.4f))
+            {
+                targetPos = nextPos; // 현재 위치를 착지 지점으로 고정
+                break;
+            }
+
+            player.transform.position = nextPos;
             yield return null;
         }
 

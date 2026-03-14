@@ -4,17 +4,30 @@ using UnityEngine;
 
 public class StageManager : SingletonBase<StageManager>
 {
+    #region Events
+
     public event Action OnStageProgress;
     public event Action OnGameClear; 
+
+    #endregion
+
+    #region Serialized Fields
 
     [Header("Game State")]
     [field: SerializeField] public int StageCount { get; private set; } = 0; 
     [SerializeField] private int maxStageCount = 100;
     [SerializeField] private float autoProceedDelay = 0.8f; 
     
-    public bool IsTransitioning { get; private set; }
+    #endregion
 
+    #region Private Fields
+
+    public bool IsTransitioning { get; private set; }
     private Swarm _currentSwarm;
+
+    #endregion
+
+    #region Properties
 
     public Swarm CurrentSwarm 
     { 
@@ -35,15 +48,22 @@ public class StageManager : SingletonBase<StageManager>
         }
     }
 
+    #endregion
+
+    #region Lifecycle
+
     protected override void Awake()
     {
         dontDestroy = false;
         base.Awake();
     }
 
+    #endregion
+
+    #region Stage Progression
+
     private void HandleSwarmCleared()
     {
-        // [추가] 스테이지 클리어 시 체력 5 회복
         if (PlayerUnit.Instance != null) PlayerUnit.Instance.Heal(5);
 
         if (StageCount >= maxStageCount - 1)
@@ -62,60 +82,54 @@ public class StageManager : SingletonBase<StageManager>
     {
         IsTransitioning = true;
 
-        // 적 전멸 후 모든 보상(시체, 상자) 수집
+        // 1. 보상 수집
         CollectAllRewards();
         yield return new WaitForSeconds(autoProceedDelay);
 
-        if (PlayerUnit.Instance != null)
-        {
-            bool playerMoved = false;
-            float waitTimeout = 2.0f;
-            float waitElapsed = 0f;
+        // 2. 플레이어 이동 연출
+        yield return StartCoroutine(MovePlayerToExit());
 
-            PlayerUnit.Instance.MoveToNextFloorSequence(() => { playerMoved = true; });
-            
-            while (!playerMoved && waitElapsed < waitTimeout)
-            {
-                waitElapsed += Time.deltaTime;
-                yield return null;
-            }
-        }
-
-        // 현재 막 클리어한 층이 보스 층인지 확인 (5, 10, 15...)
+        // 3. 클리어한 층 판정 및 보상 처리
         int clearedFloor = StageCount + 1;
         bool wasBoss = (clearedFloor % 5 == 0); 
         
-        // 보스 클리어 시 스킬 뽑기 오픈
-        if (wasBoss && SkillGachaManager.Instance != null)
-        {
-            SkillGachaManager.Instance.OpenGachaUI();
-        }
-        else if (!wasBoss && PlayerUnit.Instance != null)
-        {
-            // 일반 스테이지는 랜덤 스탯 강화
-            string msg = PlayerUnit.Instance.UpgradeRandomStat();
-            if (InGameUIManager.Instance != null) InGameUIManager.Instance.ShowUpgradeNotice(msg);
-        }
+        ProcessFloorClearRewards(wasBoss);
         
+        // 4. 다음 스테이지 시작
         NextStage(wasBoss);
         yield return new WaitForSeconds(0.5f); 
         IsTransitioning = false;
     }
 
-    private void CollectAllRewards()
+    private IEnumerator MovePlayerToExit()
     {
-        // 1. 모든 시체 수집
-        Corpse[] corpses = FindObjectsByType<Corpse>(FindObjectsSortMode.None);
-        foreach (var corpse in corpses)
-        {
-            if (corpse != null) corpse.StartAbsorb();
-        }
+        if (PlayerUnit.Instance == null) yield break;
 
-        // 2. 미획득 보상 상자 수집 추가
-        RewardChest[] chests = FindObjectsByType<RewardChest>(FindObjectsSortMode.None);
-        foreach (var chest in chests)
+        bool playerMoved = false;
+        float waitTimeout = 2.0f;
+        float waitElapsed = 0f;
+
+        PlayerUnit.Instance.MoveToNextFloorSequence(() => { playerMoved = true; });
+        
+        while (!playerMoved && waitElapsed < waitTimeout)
         {
-            if (chest != null) chest.StartAbsorb();
+            waitElapsed += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    private void ProcessFloorClearRewards(bool wasBoss)
+    {
+        if (wasBoss)
+        {
+            if (SkillGachaManager.Instance != null)
+                SkillGachaManager.Instance.OpenGachaUI();
+        }
+        else if (PlayerUnit.Instance != null)
+        {
+            string msg = PlayerUnit.Instance.UpgradeRandomStat();
+            if (InGameUIManager.Instance != null) 
+                InGameUIManager.Instance.ShowUpgradeNotice(msg);
         }
     }
 
@@ -128,6 +142,31 @@ public class StageManager : SingletonBase<StageManager>
             Debug.Log($"<color=white>Entered Floor {StageCount + 1}</color>");
         }
     }
+
+    #endregion
+
+    #region Reward Handling
+
+    private void CollectAllRewards()
+    {
+        // 모든 시체 수집
+        Corpse[] corpses = FindObjectsByType<Corpse>(FindObjectsSortMode.None);
+        foreach (var corpse in corpses)
+        {
+            if (corpse != null) corpse.StartAbsorb();
+        }
+
+        // 미획득 보상 상자 수집
+        RewardChest[] chests = FindObjectsByType<RewardChest>(FindObjectsSortMode.None);
+        foreach (var chest in chests)
+        {
+            if (chest != null) chest.StartAbsorb();
+        }
+    }
+
+    #endregion
+
+    #region Visual Effects & HitStop
 
     public void TriggerHitStop(float duration)
     {
@@ -142,4 +181,6 @@ public class StageManager : SingletonBase<StageManager>
         yield return new WaitForSecondsRealtime(duration);
         Time.timeScale = 1.0f; 
     }
+
+    #endregion
 }

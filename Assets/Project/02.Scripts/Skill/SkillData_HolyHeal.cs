@@ -7,6 +7,11 @@ public class SkillData_HolyHeal : SkillData
     public override SkillTier Tier => SkillTier.Rare;
     public int healAmount = 20;
 
+    private void OnEnable()
+    {
+        description = "Instantly restores 20 HP using sacred light.";
+    }
+
     public override IEnumerator Execute(PlayerUnit player)
     {
         player.PlaySkillAnimation();

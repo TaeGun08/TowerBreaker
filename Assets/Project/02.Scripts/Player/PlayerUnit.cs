@@ -7,11 +7,11 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerStatsController))]
 public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 {
+    #region Serialized Fields
+
     [Header("Module References")]
     [SerializeField] private Animator animator;
-    private VisualFeedback _feedback;
-    private PlayerStatsController _statsController;
-
+    
     [Header("Effects Prefabs")]
     [SerializeField] private GameObject attackEffectPrefab; 
     [SerializeField] private GameObject dashEffectPrefab;   
@@ -20,10 +20,10 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     [Header("Combat Settings")]
     [SerializeField] private float attackRange = 1.3f;
-    [SerializeField] private float attackCooldown = 0.7f; // 0.25 -> 0.7 (묵직한 공격)
-    [SerializeField] private float guardDuration = 1.0f; // 0.7 -> 1.0 (가드 상향)
-    [SerializeField] private float guardCooldown = 0.2f; // 0.3 -> 0.2 (가드 빈도 상향)
-    [SerializeField] private float guardPushDistance = 1.6f; // 판정 거리 상향
+    [SerializeField] private float attackCooldown = 0.7f; 
+    [SerializeField] private float guardDuration = 1.0f; 
+    [SerializeField] private float guardCooldown = 0.2f; 
+    [SerializeField] private float guardPushDistance = 1.6f; 
     [SerializeField] private float playerGuardRecoil = 0.25f;
 
     [Header("Movement Settings")]
@@ -32,28 +32,44 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     [SerializeField] private float dashCooldown = 0.4f;
     [SerializeField] private Vector3 startPosition = new Vector3(-1.4f, -0.1f, 0f);
 
-    [Header("Contact Damage (Dot)")]
+    [Header("Contact Damage")]
     [SerializeField] private float contactDamageRange = 0.5f; 
     [SerializeField] private float contactDamageInterval = 1.0f; 
     [SerializeField] private int contactDamage = 5; 
+
+    #endregion
+
+    #region Private Fields
+
+    private VisualFeedback _feedback;
+    private PlayerStatsController _statsController;
     private float _contactDamageTimer;
-
-    public int CurrentHP => _statsController.CurrentHP;
-    public PlayerStats Stats => _statsController.CurrentStats;
-    public event Action<int, int> OnHealthChanged;
-
     private bool _isDashing, _isAttacking, _isGuarding, _isTransitioning, _isDashCooldown, _isGuardCooldown;
-    public bool IsTransitioning => _isTransitioning;
-    public bool IsInvulnerable { get; set; }
-    public bool IsActionActive => _isDashing || _isGuarding;
-
+    
     private readonly List<SkillInstance> _skills = new List<SkillInstance>();
-    public IReadOnlyList<SkillInstance> CurrentSkills => _skills;
-    public event Action OnSkillsUpdated;
-
+    
+    // Animation Hashes
     private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
     private static readonly int AnimMoveTrigger = Animator.StringToHash("1_Move");
     private static readonly int AnimGuardTrigger = Animator.StringToHash("4_Guard");
+
+    #endregion
+
+    #region Properties & Events
+
+    public int CurrentHP => _statsController.CurrentHP;
+    public PlayerStats Stats => _statsController.CurrentStats;
+    public bool IsTransitioning => _isTransitioning;
+    public bool IsInvulnerable { get; set; }
+    public bool IsActionActive => _isDashing || _isGuarding;
+    public IReadOnlyList<SkillInstance> CurrentSkills => _skills;
+
+    public event Action<int, int> OnHealthChanged;
+    public event Action OnSkillsUpdated;
+
+    #endregion
+
+    #region Lifecycle
 
     protected override void Awake()
     {
@@ -85,6 +101,10 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         if (!_isTransitioning) ClampPosition();
     }
 
+    #endregion
+
+    #region Skill Management
+
     public bool AddSkill(SkillData data)
     {
         if (_skills.Count < 2)
@@ -105,7 +125,16 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         }
     }
 
-    #region Interaction & Combat
+    public void UseSkill(int index)
+    {
+        if (!CanInput() || index < 0 || index >= _skills.Count) return;
+        SkillInstance instance = _skills[index];
+        if (instance.IsReady) instance.Use(this);
+    }
+
+    #endregion
+
+    #region Combat & Damage
 
     public string UpgradeRandomStat() => _statsController.UpgradeRandomStat();
 
@@ -115,7 +144,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
         if (IsActionActive)
         {
-            // 방어 피드백 (현재 가장 앞에 있는 적을 대상으로 판정)
             Monster target = StageManager.Instance?.CurrentSwarm?.GetFrontMonster();
             ApplyBlockFeedback(target, isProjectile: isProjectile, isDashing: _isDashing);
             return;
@@ -127,10 +155,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         if (CurrentHP <= 0) Die();
     }
 
-    public void Heal(int amount)
-    {
-        _statsController.Heal(amount);
-    }
+    public void Heal(int amount) => _statsController.Heal(amount);
 
     private void ApplyBlockFeedback(Monster target, bool isProjectile, bool isDashing = false)
     {
@@ -142,36 +167,14 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             StartCoroutine(PlayerRecoilCoroutine());
         }
 
-        // [중요] 화살이나 마법(isProjectile)을 막았을 때는 적 보스나 군집을 밀어내지 않음
         if (!isProjectile)
         {
             if (target != null && target.Type == MonsterType.Boss)
-            {
-                // 보스는 단독으로 넉백 (따로 적용)
                 target.Knockback(guardPushDistance, 0.2f);
-            }
             else
-            {
-                // 일반 몬스터는 군집 단위로 넉백 (미니언들만 밀림)
                 StageManager.Instance?.CurrentSwarm?.Knockback(guardPushDistance, 0.2f);
-            }
         }
     }
-
-    private IEnumerator PlayerRecoilCoroutine()
-    {
-        Vector3 startPos = transform.position;
-        Vector3 targetPos = startPos + Vector3.left * playerGuardRecoil;
-        float elapsed = 0f, duration = 0.1f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            transform.position = Vector3.Lerp(startPos, targetPos, elapsed / duration);
-            yield return null;
-        }
-    }
-
-    private void Die() => Debug.Log("<color=black>Player Dead...</color>");
 
     private void HandleContactDamage()
     {
@@ -185,7 +188,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         {
             if (_isGuarding)
             {
-                // 접촉 데미지는 근접 공격이므로 isProjectile = false
                 ApplyBlockFeedback(front, isProjectile: false, isDashing: false);
                 return; 
             }
@@ -200,16 +202,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         else _contactDamageTimer = 0f;
     }
 
-    private void ClampPosition()
-    {
-        Camera cam = Camera.main;
-        if (cam == null) return;
-        float screenHalfWidth = cam.orthographicSize * cam.aspect;
-        float limitX = screenHalfWidth * 0.85f;
-        Vector3 pos = transform.position;
-        pos.x = Mathf.Clamp(pos.x, -limitX, limitX);
-        transform.position = pos;
-    }
+    private void Die() => Debug.Log("<color=black>Player Dead...</color>");
 
     #endregion
 
@@ -219,43 +212,16 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     public void PerformDash() { if (CanInput() && !_isDashCooldown) StartCoroutine(DashCoroutine()); }
     public void PerformGuard() { if (CanInput() && !_isGuardCooldown) StartCoroutine(GuardCoroutine()); }
 
-    public void UseSkill(int index)
-    {
-        if (!CanInput() || index < 0 || index >= _skills.Count) return;
-        SkillInstance instance = _skills[index];
-        if (instance.IsReady) instance.Use(this);
-    }
-
-    public void PlaySkillAnimation()
-    {
-        if (animator != null)
-        {
-            animator.SetTrigger(AnimAttackTrigger);
-        }
-    }
-
-    public void SpawnSkillEffect(GameObject prefab, Vector3 positionOffset = default)
-    {
-        if (prefab == null) return;
-        Instantiate(prefab, transform.position + positionOffset, Quaternion.identity);
-    }
-
     private bool CanInput() => !_isDashing && !_isAttacking && !_isGuarding && !_isTransitioning;
 
     private IEnumerator AttackCoroutine()
     {
         _isAttacking = true;
+        if (animator != null) animator.SetTrigger(AnimAttackTrigger);
 
-        if (animator != null)
-        {
-            animator.SetTrigger(AnimAttackTrigger);
-        }
-
-        // [수정] 버튼 입력 후 0.7초 뒤에 실제 타격 판정 발생 (다크나이트와 동일한 템포)
-        yield return new WaitForSeconds(0.7f);
+        yield return new WaitForSeconds(attackCooldown);
         ProcessAttackLogic();
 
-        // 타격 후 아주 짧은 후딜레이 후 공격 가능 상태로 복귀
         yield return new WaitForSeconds(0.1f);
         _isAttacking = false;
     }
@@ -263,9 +229,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     private void ProcessAttackLogic()
     {
         if (DeflectProjectilesInRange(attackRange))
-        {
             ApplyBlockFeedback(null, isProjectile: true, isDashing: false);
-        }
 
         Swarm swarm = StageManager.Instance?.CurrentSwarm;
         if (swarm == null) return;
@@ -277,8 +241,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         if (swarm.AttackInRange(transform.position.x, attackRange, damage, isCrit))
         {
             SpawnEffect(attackEffectPrefab, transform.position + Vector3.right * 0.8f);
-            if (isCrit) TriggerCombatJuice(0.08f, 0.15f, 0.1f);
-            else TriggerCombatJuice(0.05f, 0.08f, 0.05f);
+            TriggerCombatJuice(isCrit ? 0.08f : 0.05f, isCrit ? 0.15f : 0.08f, isCrit ? 0.1f : 0.05f);
         }
     }
 
@@ -299,9 +262,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             if (IsMonsterAhead(nextPos)) break; 
             
             if (DeflectProjectilesInRange(0.5f))
-            {
                 ApplyBlockFeedback(null, isProjectile: true, isDashing: true);
-            }
 
             transform.position = nextPos;
             yield return null;
@@ -310,57 +271,44 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         StartCoroutine(DashCooldownCoroutine());
     }
 
-    private IEnumerator DashCooldownCoroutine()
-    {
-        _isDashCooldown = true;
-        yield return new WaitForSeconds(dashCooldown);
-        _isDashCooldown = false;
-    }
-
     private IEnumerator GuardCoroutine()
     {
         _isGuarding = true;
         if (animator != null) animator.SetTrigger(AnimGuardTrigger);
 
-        Swarm swarm = StageManager.Instance?.CurrentSwarm;
-        if (swarm != null)
-        {
-            Monster front = swarm.GetFrontMonster();
-            if (front != null && (front.transform.position.x - transform.position.x) <= contactDamageRange + 0.3f)
-            {
-                ApplyBlockFeedback(front, isProjectile: false, isDashing: false);
-            }
-        }
+        // 즉시 접촉 체크
+        Monster front = StageManager.Instance?.CurrentSwarm?.GetFrontMonster();
+        if (front != null && (front.transform.position.x - transform.position.x) <= contactDamageRange + 0.3f)
+            ApplyBlockFeedback(front, isProjectile: false, isDashing: false);
 
         float elapsed = 0f;
         while (elapsed < guardDuration)
         {
             elapsed += Time.deltaTime;
             if (DeflectProjectilesInRange(attackRange))
-            {
                 ApplyBlockFeedback(null, isProjectile: true, isDashing: false);
-            }
             yield return null;
         }
         _isGuarding = false;
         StartCoroutine(GuardCooldownCoroutine());
     }
 
-    private IEnumerator GuardCooldownCoroutine()
-    {
-        _isGuardCooldown = true;
-        yield return new WaitForSeconds(guardCooldown);
-        _isGuardCooldown = false;
-    }
-
     #endregion
 
-    #region Helpers & Transitions
+    #region Helpers & Feedback
 
-    private bool IsMonsterAhead(Vector3 pos)
+    public void PlaySkillAnimation() { if (animator != null) animator.SetTrigger(AnimAttackTrigger); }
+
+    public void SpawnSkillEffect(GameObject prefab, Vector3 positionOffset = default)
     {
+        if (prefab != null) Instantiate(prefab, transform.position + positionOffset, Quaternion.identity);
+    }
+
+    public bool IsMonsterAhead(Vector3 pos, float threshold = -1f)
+    {
+        float actualThreshold = (threshold < 0) ? dashStopThreshold : threshold;
         Monster front = StageManager.Instance?.CurrentSwarm?.GetFrontMonster();
-        return front != null && (front.transform.position.x - pos.x) <= dashStopThreshold;
+        return front != null && (front.transform.position.x - pos.x) <= actualThreshold;
     }
 
     private bool DeflectProjectilesInRange(float range)
@@ -386,11 +334,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         return hitAny;
     }
 
-    public void OnDeflectSuccess(Vector3 position)
-    {
-        // 중복 방지를 위해 스파크(가드) 이펙트로 통일
-        SpawnEffect(guardEffectPrefab, position);
-    }
+    public void OnDeflectSuccess(Vector3 position) => SpawnEffect(guardEffectPrefab, position);
 
     private void SpawnEffect(GameObject prefab, Vector3 position)
     {
@@ -407,13 +351,51 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         if (CameraManager.Instance != null) CameraManager.Instance.Shake(intensity, duration);
     }
 
+    private void ClampPosition()
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return;
+        float screenHalfWidth = cam.orthographicSize * cam.aspect;
+        float limitX = screenHalfWidth * 0.85f;
+        Vector3 pos = transform.position;
+        pos.x = Mathf.Clamp(pos.x, -limitX, limitX);
+        transform.position = pos;
+    }
+
+    private IEnumerator PlayerRecoilCoroutine()
+    {
+        Vector3 startPos = transform.position;
+        Vector3 targetPos = startPos + Vector3.left * playerGuardRecoil;
+        float elapsed = 0f, duration = 0.1f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            transform.position = Vector3.Lerp(startPos, targetPos, elapsed / duration);
+            yield return null;
+        }
+    }
+
+    private IEnumerator DashCooldownCoroutine()
+    {
+        _isDashCooldown = true;
+        yield return new WaitForSeconds(dashCooldown);
+        _isDashCooldown = false;
+    }
+
+    private IEnumerator GuardCooldownCoroutine()
+    {
+        _isGuardCooldown = true;
+        yield return new WaitForSeconds(guardCooldown);
+        _isGuardCooldown = false;
+    }
+
+    #endregion
+
+    #region Transitions
+
     public void MoveToNextFloorSequence(Action onComplete)
     {
-        if (_isTransitioning)
-        {
-            onComplete?.Invoke();
-            return;
-        }
+        if (_isTransitioning) { onComplete?.Invoke(); return; }
         StartCoroutine(MoveRightAndExit(onComplete));
     }
 
@@ -443,7 +425,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     {
         transform.position = new Vector3(-8.0f, startPosition.y, 0f);
         if (animator != null) animator.SetTrigger(AnimMoveTrigger);
-
         float elapsed = 0f, duration = 0.5f;
         Vector3 startPos = transform.position, targetPos = startPosition;
         while (elapsed < duration)

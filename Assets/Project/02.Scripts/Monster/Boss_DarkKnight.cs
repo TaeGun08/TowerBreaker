@@ -3,35 +3,45 @@ using UnityEngine;
 
 public class Boss_DarkKnight : Monster
 {
+    #region Serialized Fields
+
     [Header("Dark Knight Patterns")]
     [SerializeField] private float dashSpeed = 10.0f;
     [SerializeField] private float dashDistance = 3.0f;
     [SerializeField] private float slashRange = 2.5f;
     [SerializeField] private int slashDamage = 25;
 
+    #endregion
+
+    #region Private Fields
+
     private bool _isPatternRunning = false;
     private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
+
+    #endregion
+
+    #region Lifecycle
 
     protected override void Update()
     {
         base.Update();
 
-        // 현재 활성화된 군집이 아니면 행동 중지
-        if (!IsInActiveSwarm())
+        if (ShouldStartPattern())
         {
-            IsMoveStop = true;
-            return;
+            StartCoroutine(PatternCycle());
         }
+    }
 
-        if (!_isPatternRunning && PlayerUnit.Instance != null)
-        {
-            float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
-            // 6.0f -> 8.0f (거리에 상관없이 더 적극적으로 패턴 시작)
-            if (sqrDist < 64.0f) 
-            {
-                StartCoroutine(PatternCycle());
-            }
-        }
+    #endregion
+
+    #region Pattern Logic
+
+    private bool ShouldStartPattern()
+    {
+        if (_isPatternRunning || PlayerUnit.Instance == null || !IsInActiveSwarm()) return false;
+        
+        float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
+        return sqrDist < 64.0f; // 8.0f 거리 이내
     }
 
     private IEnumerator PatternCycle()
@@ -40,18 +50,16 @@ public class Boss_DarkKnight : Monster
 
         while (IsInActiveSwarm())
         {
-            // 패턴 사이 대기 시간 조정 (2.0초 ~ 3.5초 랜덤)
+            // 패턴 사이 대기 시간 (2.0s ~ 3.5s)
             yield return new WaitForSeconds(Random.Range(2.0f, 3.5f));
 
-            if (PlayerUnit.Instance != null && PlayerUnit.Instance.IsTransitioning)
-            {
-                continue;
-            }
+            if (PlayerUnit.Instance != null && PlayerUnit.Instance.IsTransitioning) continue;
 
             int rand = Random.Range(0, 2);
             if (rand == 0) yield return Pattern_DashAttack();
             else yield return Pattern_WideSlash();
         }
+        
         _isPatternRunning = false;
     }
 
@@ -60,20 +68,21 @@ public class Boss_DarkKnight : Monster
         IsMoveStop = true; 
         if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         
-        // 돌진 전 예비 동작 (뒤로 살짝 물러남)
+        // 1. 준비 동작 (뒤로 물러남)
         Vector3 startPos = transform.position;
         Vector3 backPos = startPos + Vector3.right * 0.5f;
         
         float t = 0;
         while (t < 1)
         {
-            t += Time.deltaTime * 2.5f; // 예비 동작 속도 약간 증가
+            t += Time.deltaTime * 2.5f;
             transform.position = Vector3.Lerp(startPos, backPos, t);
             yield return null;
         }
 
-        yield return new WaitForSeconds(0.3f); // 돌진 직전 멈춤 (긴장감)
+        yield return new WaitForSeconds(0.3f); 
 
+        // 2. 돌진
         Vector3 dashTarget = transform.position + Vector3.left * dashDistance;
         t = 0;
         while (t < 1)
@@ -81,16 +90,7 @@ public class Boss_DarkKnight : Monster
             t += Time.deltaTime * dashSpeed;
             transform.position = Vector3.Lerp(backPos, dashTarget, t);
             
-            if (PlayerUnit.Instance != null)
-            {
-                float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
-                if (sqrDist < 0.64f)
-                {
-                    PlayerUnit.Instance.TakeDamage(slashDamage);
-                    if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.3f, 0.2f);
-                    break;
-                }
-            }
+            if (CheckPlayerCollision()) break;
             yield return null;
         }
 
@@ -102,7 +102,7 @@ public class Boss_DarkKnight : Monster
         IsMoveStop = true;
         if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         
-        // [수정] 1.1f -> 0.7f: 플레이어와 동일한 타이밍으로 조정
+        // 0.7s 선딜레이
         yield return new WaitForSeconds(0.7f); 
 
         if (PlayerUnit.Instance != null)
@@ -119,4 +119,20 @@ public class Boss_DarkKnight : Monster
         yield return new WaitForSeconds(0.7f); // 후딜레이
         IsMoveStop = false;
     }
+
+    private bool CheckPlayerCollision()
+    {
+        if (PlayerUnit.Instance == null) return false;
+        
+        float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
+        if (sqrDist < 0.64f)
+        {
+            PlayerUnit.Instance.TakeDamage(slashDamage);
+            if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.3f, 0.2f);
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
 }

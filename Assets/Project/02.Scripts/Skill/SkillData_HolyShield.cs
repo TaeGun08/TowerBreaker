@@ -5,6 +5,11 @@ using UnityEngine;
 public class SkillData_HolyShield : SkillData
 {
     public override SkillTier Tier => SkillTier.Rare;
+
+    private void OnEnable()
+    {
+        description = "Creates a divine shield that grants invulnerability for 2 seconds.";
+    }
     public float duration = 2.0f;
 
     public override IEnumerator Execute(PlayerUnit player)
