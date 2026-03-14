@@ -31,7 +31,6 @@ public class PlayerStatsController : MonoBehaviour
     {
         if (baseStats == null)
         {
-            Debug.LogWarning($"[PlayerStatsController] BaseStats is missing on {gameObject.name}. Initialization skipped.");
             return;
         }
 
@@ -55,8 +54,6 @@ public class PlayerStatsController : MonoBehaviour
             _finalStats.maxHp += hp;
             _finalStats.critChance += crit;
             _finalStats.doubleHitChance += dbl;
-
-            Debug.Log($"[PlayerStatsController] Equipment Applied: ATK+{atk}, DEF+{def}, HP+{hp}, CRIT+{crit*100}%");
         }
 
         
@@ -85,4 +82,3 @@ public class PlayerStatsController : MonoBehaviour
         return result;
     }
 }
-

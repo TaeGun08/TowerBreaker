@@ -31,8 +31,6 @@ public class UIPausePanel : MonoBehaviour
         
         Time.timeScale = 1.0f;
         
-        Debug.Log("Exiting to Main Menu...");
         SceneManager.LoadScene("OutGame");
     }
 }
-

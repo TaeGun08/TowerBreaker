@@ -24,7 +24,6 @@ public class OutGameUIBuilder : EditorWindow
         {
             PlayerPrefs.DeleteAll();
             PlayerPrefs.Save();
-            Debug.Log("<color=red>All Save Data has been cleared!</color>");
         }
     }
 
@@ -121,4 +120,3 @@ public class OutGameUIBuilder : EditorWindow
     }
 }
 #endif
-

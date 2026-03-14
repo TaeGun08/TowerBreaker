@@ -43,8 +43,6 @@ public class EquipmentIconAssigner : EditorWindow
         }
 
         AssetDatabase.SaveAssets();
-        Debug.Log($"<color=green>Successfully assigned icons to {count} equipment assets!</color>");
     }
 }
 #endif
-

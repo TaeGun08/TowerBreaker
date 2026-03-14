@@ -10,13 +10,11 @@ public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
     {
         if (CurrencyManager.Instance == null || CurrencyManager.Instance.TotalChests < GACHA_COST_CHEST)
         {
-            Debug.LogWarning("Not enough Chests! Draw cancelled.");
             return null;
         }
 
         if (EquipmentManager.Instance == null || EquipmentManager.Instance.MasterDB == null || EquipmentManager.Instance.MasterDB.Count == 0)
         {
-            Debug.LogError("Equipment Database is missing or empty!");
             return null;
         }
 
@@ -37,7 +35,6 @@ public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
 
         if (possibleItems.Count == 0)
         {
-            Debug.LogError($"No equipment found for tier: {targetTier}");
             return null;
         }
 
@@ -50,4 +47,3 @@ public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
         return result;
     }
 }
-

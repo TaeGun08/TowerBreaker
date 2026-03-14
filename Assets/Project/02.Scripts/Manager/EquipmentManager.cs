@@ -40,11 +40,6 @@ public class EquipmentManager : SingletonBase<EquipmentManager>
         if (loaded != null && loaded.Length > 0)
         {
             allEquipmentDatabase = loaded.ToList();
-            Debug.Log($"<color=green>[EquipmentManager] Database Loaded: {allEquipmentDatabase.Count} items from Resources/Equipment.</color>");
-        }
-        else
-        {
-            Debug.LogError("[EquipmentManager] No assets found in Resources/Equipment! Make sure your SO files are in that folder.");
         }
     }
 
@@ -142,7 +137,6 @@ public class EquipmentManager : SingletonBase<EquipmentManager>
                 hp += data.hpBonus;
                 crit += data.critBonus;
                 dbl += data.doubleHitBonus;
-                Debug.Log($"<color=yellow>[EquipmentManager] Bonus Applied: {data.equipmentName} ({data.type})</color>");
             }
         }
         return (atk, def, hp, crit, dbl);

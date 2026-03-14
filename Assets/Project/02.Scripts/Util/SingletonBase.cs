@@ -55,7 +55,6 @@ public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
         }
         else if (_instance != this)
         {
-            Debug.LogWarning($"[Singleton] Instance of {typeof(T)} already exists. Destroying duplicate on {gameObject.name}");
             Destroy(gameObject);
         }
     }
@@ -74,4 +73,3 @@ public class SingletonBase<T> : MonoBehaviour where T : MonoBehaviour
         }
     }
 }
-

@@ -83,7 +83,6 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         {
             UpdateCorpseUI(cm.SessionCorpse);
             UpdateChestUI(cm.SessionChests);
-            Debug.Log($"<color=cyan>UI Initialized: Corpse={cm.SessionCorpse}, Chest={cm.SessionChests}</color>");
         }
         else
         {
@@ -290,4 +289,3 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         }
     }
 }
-

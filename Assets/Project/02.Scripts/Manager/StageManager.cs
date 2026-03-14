@@ -76,7 +76,6 @@ public class StageManager : SingletonBase<StageManager>
     private void HandleGameOver()
     {
         _isGameOver = true;
-        Debug.Log("<color=red>Game Over! Showing Results...</color>");
         StartCoroutine(GameOverSequence());
     }
 
@@ -170,7 +169,6 @@ public class StageManager : SingletonBase<StageManager>
         {
             StageCount++;
             OnStageProgress?.Invoke();
-            Debug.Log($"<color=white>Entered Floor {StageCount + 1}</color>");
         }
     }
 
@@ -215,4 +213,3 @@ public class StageManager : SingletonBase<StageManager>
 
     #endregion
 }
-

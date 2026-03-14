@@ -19,7 +19,6 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
         
         if (_instance != null && _instance != this)
         {
-            Debug.Log("[CurrencyManager] Duplicate found, destroying.");
             Destroy(gameObject);
             return;
         }
@@ -28,7 +27,6 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
         base.Awake();
         
         LoadTotalData();
-        Debug.Log($"[CurrencyManager] Awake. TotalChests: {TotalChests}");
     }
 
     private void LoadTotalData()
@@ -42,13 +40,11 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
         SessionChests = 0;
         OnSessionCorpseChanged?.Invoke(SessionCorpse);
         OnSessionChestChanged?.Invoke(SessionChests);
-        Debug.Log("[CurrencyManager] Session Data Reset.");
     }
 
     public void AddCorpse(int amount)
     {
         SessionCorpse += amount;
-        Debug.Log($"[CurrencyManager] Adding Corpse: {amount}. Current Session: {SessionCorpse}");
         
         
         OnSessionCorpseChanged?.Invoke(SessionCorpse);
@@ -68,7 +64,6 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
         PlayerPrefs.SetInt(KEY_CHEST, TotalChests);
         PlayerPrefs.Save();
 
-        Debug.Log($"[CurrencyManager] Adding Chest: {count}. Total: {TotalChests}");
 
         OnSessionChestChanged?.Invoke(SessionChests);
         
@@ -98,7 +93,5 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
         
         OnSessionChestChanged?.Invoke(0);
         OnSessionCorpseChanged?.Invoke(0);
-        Debug.Log("<color=red>Currency Data Cleared!</color>");
     }
 }
-

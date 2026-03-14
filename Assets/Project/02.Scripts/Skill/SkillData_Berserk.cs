@@ -25,7 +25,6 @@ public class SkillData_Berserk : SkillData
     private IEnumerator BerserkEffect(PlayerUnit player)
     {
         
-        Debug.Log("<color=red>Berserk Activated!</color>");
         
         float elapsed = 0f;
         while (elapsed < duration)
@@ -35,7 +34,5 @@ public class SkillData_Berserk : SkillData
             yield return null;
         }
 
-        Debug.Log("<color=white>Berserk Ended.</color>");
     }
 }
-

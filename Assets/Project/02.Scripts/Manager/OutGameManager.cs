@@ -37,7 +37,6 @@ public class OutGameManager : SingletonBase<OutGameManager>
         GameObject newES = new GameObject("EventSystem_Restored");
         newES.AddComponent<EventSystem>();
         newES.AddComponent<StandaloneInputModule>();
-        Debug.Log("<color=green>[OutGameManager] EventSystem has been Purged and Restored.</color>");
     }
 
     private void AutoAssignPanels()
@@ -109,4 +108,3 @@ public class OutGameManager : SingletonBase<OutGameManager>
 #endif
     }
 }
-

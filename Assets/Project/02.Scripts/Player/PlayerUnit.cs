@@ -217,7 +217,6 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     {
         if (IsInvulnerable) return; 
 
-        Debug.Log("<color=red>Player Unit Died!</color>");
         
         
         Time.timeScale = deathSlowdown;
@@ -480,4 +479,3 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     #endregion
 }
-
