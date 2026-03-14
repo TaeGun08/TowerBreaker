@@ -28,7 +28,7 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     [SerializeField] private GameObject gameOverPanel;
 
     [Header("Skill Buttons")]
-    [SerializeField] private UISkillButton[] skillButtons; // 인스펙터에서 2개 할당
+    [SerializeField] private UISkillButton[] skillButtons; 
 
     [Header("Damage Font Settings")]
     [SerializeField] private DamageText damageTextPrefab;
@@ -57,7 +57,7 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
     private void InitializeUI()
     {
-        // 1. 플레이어 정보 초기화 (인스턴스 존재 여부 철저히 체크)
+        
         var player = PlayerUnit.Instance;
         if (player != null && player.Stats != null)
         {
@@ -67,17 +67,17 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         }
         else
         {
-            // 플레이어가 없는 상황 (아웃게임 등)에서는 기본값 표시 혹은 무시
+            
             if (hpText != null) hpText.text = "";
         }
 
-        // 2. 스테이지 정보 초기화
+        
         if (StageManager.Instance != null)
         {
             UpdateStageText(StageManager.Instance.StageCount);
         }
 
-        // 3. 재화 정보 즉시 동기화 (가장 중요)
+        
         var cm = CurrencyManager.Instance;
         if (cm != null)
         {
@@ -100,7 +100,7 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         if (PlayerUnit.Instance != null)
         {
             PlayerUnit.Instance.OnHealthChanged += HandleHealthChanged;
-            PlayerUnit.Instance.OnSkillsUpdated += UpdateSkillButtons; // 스킬 갱신 이벤트 구독
+            PlayerUnit.Instance.OnSkillsUpdated += UpdateSkillButtons; 
         }
 
         if (StageManager.Instance != null)
@@ -115,7 +115,7 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
 
     private void OnDisable()
     {
-        // 1. 플레이어 유닛 이벤트 해제
+        
         if (!SingletonBase<PlayerUnit>.IsQuitting)
         {
             var player = PlayerUnit.Instance;
@@ -126,14 +126,14 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
             }
         }
 
-        // 2. 스테이지 매니저 이벤트 해제
+        
         if (!SingletonBase<StageManager>.IsQuitting)
         {
             var sm = StageManager.Instance;
             if (sm != null) sm.OnStageProgress -= HandleStageProgress;
         }
 
-        // 3. 재화 매니저 이벤트 해제
+        
         if (!SingletonBase<CurrencyManager>.IsQuitting)
         {
             var cm = CurrencyManager.Instance;
@@ -290,3 +290,4 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         }
     }
 }
+

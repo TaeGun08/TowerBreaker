@@ -12,14 +12,14 @@ public abstract class SkillData : ScriptableObject
     public abstract SkillTier Tier { get; } 
     public Sprite icon;
     public float cooldown;
-    [TextArea] public string description; // 스킬 설명 필드 복구
+    [TextArea] public string description; 
     public GameObject effectPrefab; 
 
-    // 실제 스킬 로직 (상속받아 구현)
+    
     public abstract IEnumerator Execute(PlayerUnit player);
 }
 
-// 실시간 쿨다운 상태를 관리하기 위한 런타임 클래스
+
 public class SkillInstance
 {
     public SkillData Data { get; private set; }
@@ -28,7 +28,7 @@ public class SkillInstance
     public SkillInstance(SkillData data)
     {
         Data = data;
-        LastUsedTime = -999f; // 바로 사용 가능하게 초기화
+        LastUsedTime = -999f; 
     }
 
     public bool IsReady => Time.time >= LastUsedTime + Data.cooldown;
@@ -42,3 +42,4 @@ public class SkillInstance
         }
     }
 }
+

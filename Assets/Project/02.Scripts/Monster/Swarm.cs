@@ -14,7 +14,7 @@ public class Swarm : MonoBehaviour
     private float _lastKnockbackTime;
     private bool _isForcedStop; 
     
-    // [수정] 일반 미니언들의 이동 가능 여부
+    
     public bool CanMinionsMove { get; private set; }
     public bool IsCleared => _monsters.Count == 0;
 
@@ -72,15 +72,15 @@ public class Swarm : MonoBehaviour
             return;
         }
 
-        // [핵심]: 일반 몬스터(Minion) 중 가장 앞에 있는 개체 찾기
+        
         Monster frontMinion = GetFrontMinion();
         if (frontMinion == null) 
         {
-            CanMinionsMove = true; // 미니언이 없으면 멈출 이유 없음
+            CanMinionsMove = true; 
             return;
         }
 
-        // 미니언 대열 정지 거리 체크 (0.7f)
+        
         float distance = frontMinion.transform.position.x - PlayerUnit.Instance.transform.position.x;
         CanMinionsMove = (distance > 0.7f);
     }
@@ -92,7 +92,7 @@ public class Swarm : MonoBehaviour
 
         foreach (var m in _monsters)
         {
-            if (m == null || m.Type == MonsterType.Boss) continue; // 보스는 대열 판정에서 제외
+            if (m == null || m.Type == MonsterType.Boss) continue; 
             float worldX = m.transform.position.x;
             if (worldX < minX)
             {
@@ -175,3 +175,4 @@ public class Swarm : MonoBehaviour
         _monsters.Clear();
     }
 }
+

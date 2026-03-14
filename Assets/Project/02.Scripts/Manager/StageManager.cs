@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement; // 씬 전환용
+using UnityEngine.SceneManagement; 
 
 public class StageManager : SingletonBase<StageManager>
 {
@@ -25,7 +25,7 @@ public class StageManager : SingletonBase<StageManager>
 
     public bool IsTransitioning { get; private set; }
     private Swarm _currentSwarm;
-    private bool _isGameOver = false; // 게임 종료 상태 플래그
+    private bool _isGameOver = false; 
 
     #endregion
 
@@ -62,7 +62,7 @@ public class StageManager : SingletonBase<StageManager>
 
     private void Update()
     {
-        // 플레이어 사망 체크
+        
         if (!_isGameOver && PlayerUnit.Instance != null && PlayerUnit.Instance.CurrentHP <= 0)
         {
             HandleGameOver();
@@ -82,10 +82,10 @@ public class StageManager : SingletonBase<StageManager>
 
     private IEnumerator GameOverSequence()
     {
-        // 1. 플레이어 사망 연출(슬로우 등)을 감상할 시간 확보
+        
         yield return new WaitForSecondsRealtime(2.0f);
         
-        // 2. 인게임 UI 매니저를 통해 결과창 띄우기
+        
         if (InGameUIManager.Instance != null)
         {
             InGameUIManager.Instance.ShowGameOverPanel();
@@ -99,7 +99,7 @@ public class StageManager : SingletonBase<StageManager>
         if (StageCount >= maxStageCount - 1)
         {
             OnGameClear?.Invoke();
-            // 게임 클리어 시에도 메인 메뉴로 복귀 가능 (필요 시 로직 확장)
+            
             return;
         }
         
@@ -113,20 +113,20 @@ public class StageManager : SingletonBase<StageManager>
     {
         IsTransitioning = true;
 
-        // 1. 보상 수집
+        
         CollectAllRewards();
         yield return new WaitForSeconds(autoProceedDelay);
 
-        // 2. 플레이어 이동 연출
+        
         yield return StartCoroutine(MovePlayerToExit());
 
-        // 3. 클리어한 층 판정 및 보상 처리
+        
         int clearedFloor = StageCount + 1;
         bool wasBoss = (clearedFloor % 5 == 0); 
         
         ProcessFloorClearRewards(wasBoss);
         
-        // 4. 다음 스테이지 시작
+        
         NextStage(wasBoss);
         yield return new WaitForSeconds(0.5f); 
         IsTransitioning = false;
@@ -180,14 +180,14 @@ public class StageManager : SingletonBase<StageManager>
 
     private void CollectAllRewards()
     {
-        // 모든 시체 수집
+        
         Corpse[] corpses = FindObjectsByType<Corpse>(FindObjectsSortMode.None);
         foreach (var corpse in corpses)
         {
             if (corpse != null) corpse.StartAbsorb();
         }
 
-        // 미획득 보상 상자 수집
+        
         RewardChest[] chests = FindObjectsByType<RewardChest>(FindObjectsSortMode.None);
         foreach (var chest in chests)
         {
@@ -215,3 +215,4 @@ public class StageManager : SingletonBase<StageManager>
 
     #endregion
 }
+

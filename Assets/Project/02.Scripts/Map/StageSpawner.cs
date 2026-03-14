@@ -48,17 +48,17 @@ public class StageSpawner : MonoBehaviour
     {
         if (_groundQueue.Count == 0) return;
 
-        // 1. 스크롤 연출 시작
+        
         if (stageScroller != null)
         {
             stageScroller.Scroll(spacingY, 0.4f);
         }
 
-        // 2. 가장 아래 발판 위로 재배치
+        
         GameObject oldGround = _groundQueue.Dequeue();
         oldGround.transform.localPosition = _nextSpawnPos;
         
-        // 3. 새로운 층 번호로 몬스터 스폰
+        
         if (monsterSpawner != null)
         {
             monsterSpawner.SpawnMonsterByFloor(_nextFloorToSpawn, oldGround);
@@ -68,10 +68,10 @@ public class StageSpawner : MonoBehaviour
         _nextSpawnPos.y += spacingY;
         _nextFloorToSpawn++;
 
-        // 4. 즉시 타겟 Swarm 갱신 (스크롤 중에 미리 잡아둠)
+        
         UpdateCurrentSwarm();
         
-        // 5. 맨 아래(이미 지나간) 발판 청소
+        
         GameObject bottomGround = _groundQueue.Peek();
         if (monsterSpawner != null)
         {
@@ -99,7 +99,7 @@ public class StageSpawner : MonoBehaviour
         if (StageManager.Instance == null) return;
 
         var array = _groundQueue.ToArray();
-        // 플레이어가 도달할 다음 발판은 항상 bottomBufferCount 위치에 있음
+        
         if (array.Length > bottomBufferCount)
         {
             Swarm nextSwarm = array[bottomBufferCount].GetComponentInChildren<Swarm>();
@@ -110,3 +110,4 @@ public class StageSpawner : MonoBehaviour
         }
     }
 }
+

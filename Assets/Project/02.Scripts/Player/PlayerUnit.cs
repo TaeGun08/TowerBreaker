@@ -48,7 +48,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     
     private readonly List<SkillInstance> _skills = new List<SkillInstance>();
     
-    // Animation Hashes
+    
     private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
     private static readonly int AnimMoveTrigger = Animator.StringToHash("1_Move");
     private static readonly int AnimGuardTrigger = Animator.StringToHash("4_Guard");
@@ -143,7 +143,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     public void TakeDamage(int damage, bool isCrit = false, bool isProjectile = false)
     {
-        // [수정] 이미 비활성화(사망) 되었거나 무적/이동 중이면 무시
+        
         if (!gameObject.activeInHierarchy || IsInvulnerable || _isTransitioning) return;
 
         if (IsActionActive)
@@ -156,7 +156,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         _statsController.ApplyDamage(damage);
         if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.1f, 0.1f);
         
-        // 유효한 상태일 때만 피격 효과 실행
+        
         if (_feedback != null) _feedback.PlayHitEffect(canPlayAnimation: !IsActionActive);
         
         if (CurrentHP <= 0) Die();
@@ -210,22 +210,22 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
     }
 
     [Header("Death Effects")]
-    [SerializeField] private Corpse[] deathFragments; // 플레이어 사망 파편들
-    [SerializeField] private float deathSlowdown = 0.2f; // 슬로우 강도
+    [SerializeField] private Corpse[] deathFragments; 
+    [SerializeField] private float deathSlowdown = 0.2f; 
 
     private void Die()
     {
-        if (IsInvulnerable) return; // 무적 상태면 죽지 않음
+        if (IsInvulnerable) return; 
 
         Debug.Log("<color=red>Player Unit Died!</color>");
         
-        // 1. 슬로우 모션 적용
+        
         Time.timeScale = deathSlowdown;
         
-        // 2. 카메라 강한 흔들림
+        
         if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.5f, 0.5f);
 
-        // 3. 파편 소환 (몬스터 시체 로직 재활용)
+        
         if (deathFragments != null)
         {
             foreach (var frag in deathFragments)
@@ -235,11 +235,11 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
             }
         }
 
-        // 4. 스테이지 매니저에게 사망 알림
+        
         if (StageManager.Instance != null)
         {
-            // StageManager에서 HandleGameOver를 부르도록 유도
-            // (이미 StageManager Update에서 체크 중이므로 플래그만으로도 작동 가능)
+            
+            
         }
 
         gameObject.SetActive(false);
@@ -317,7 +317,7 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         _isGuarding = true;
         if (animator != null) animator.SetTrigger(AnimGuardTrigger);
 
-        // 즉시 접촉 체크
+        
         Monster front = StageManager.Instance?.CurrentSwarm?.GetFrontMonster();
         if (front != null && (front.transform.position.x - transform.position.x) <= contactDamageRange + 0.3f)
             ApplyBlockFeedback(front, isProjectile: false, isDashing: false);
@@ -480,3 +480,4 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     #endregion
 }
+

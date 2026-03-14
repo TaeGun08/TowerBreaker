@@ -4,10 +4,10 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
 {
     private const string KEY_CHEST = "TotalChests";
 
-    // 영구 저장 데이터
+    
     public int TotalChests { get; private set; }
 
-    // 현재 세션 재화
+    
     public int SessionCorpse { get; private set; }
     public int SessionChests { get; private set; }
 
@@ -16,7 +16,7 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
 
     protected override void Awake()
     {
-        // 중복 방지 로직 강화
+        
         if (_instance != null && _instance != this)
         {
             Debug.Log("[CurrencyManager] Duplicate found, destroying.");
@@ -50,10 +50,10 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
         SessionCorpse += amount;
         Debug.Log($"[CurrencyManager] Adding Corpse: {amount}. Current Session: {SessionCorpse}");
         
-        // 이벤트 강제 발생
+        
         OnSessionCorpseChanged?.Invoke(SessionCorpse);
         
-        // UI가 이미 떠 있다면 즉시 갱신 명령 (이벤트가 안 먹힐 때를 대비)
+        
         if (InGameUIManager.Instance != null)
         {
             InGameUIManager.Instance.UpdateCorpseUI(SessionCorpse);
@@ -101,3 +101,4 @@ public class CurrencyManager : SingletonBase<CurrencyManager>
         Debug.Log("<color=red>Currency Data Cleared!</color>");
     }
 }
+

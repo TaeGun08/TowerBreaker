@@ -11,18 +11,18 @@ public class Archer : Monster
     private float _lastAttackTime;
     private static readonly int AnimAttackTrigger = Animator.StringToHash("2_Attack");
 
-    // 아처도 근접 몹과 동일한 0.7f에서 정지
+    
     public override float StopDistance => 0.7f;
 
     protected override void Update()
     {
-        // 부모 Monster.Update에서 CanMinionsMove 상태에 따른 이동 수행
+        
         base.Update();
 
         if (PlayerUnit.Instance == null || !IsInActiveSwarm()) return;
         if (PlayerUnit.Instance.IsTransitioning) return;
 
-        // 사거리 체크 및 공격
+        
         float distanceToPlayer = transform.position.x - PlayerUnit.Instance.transform.position.x;
         if (distanceToPlayer <= attackRange)
         {
@@ -48,3 +48,4 @@ public class Archer : Monster
         proj.SetDirection(Vector2.left);
     }
 }
+

@@ -15,11 +15,11 @@ public class SkillData_SingleSlash : SkillData
     public override IEnumerator Execute(PlayerUnit player)
     {
         player.IsInvulnerable = true;
-        player.PlaySkillAnimation(); // 공격 애니메이션 재생
+        player.PlaySkillAnimation(); 
 
-        // 약간의 선딜레이 후 이펙트 및 타격
+        
         yield return new WaitForSeconds(0.2f);
-        player.SpawnSkillEffect(effectPrefab, Vector3.right * 0.8f); // 이펙트 생성
+        player.SpawnSkillEffect(effectPrefab, Vector3.right * 0.8f); 
 
         Swarm swarm = StageManager.Instance?.CurrentSwarm;
         if (swarm != null)
@@ -30,7 +30,7 @@ public class SkillData_SingleSlash : SkillData
                 int damage = Mathf.RoundToInt(player.Stats.baseDamage * damageMultiplier);
                 target.TakeDamage(damage, isCrit: true);
                 
-                // 타격 연출
+                
                 if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.2f, 0.1f);
                 if (StageManager.Instance != null) StageManager.Instance.TriggerHitStop(0.1f);
             }
@@ -39,3 +39,4 @@ public class SkillData_SingleSlash : SkillData
         player.IsInvulnerable = false;
     }
 }
+

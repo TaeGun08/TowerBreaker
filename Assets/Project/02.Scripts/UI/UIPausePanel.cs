@@ -16,7 +16,7 @@ public class UIPausePanel : MonoBehaviour
 
     private void OnEnable()
     {
-        // 패널이 열리면 게임 정지
+        
         Time.timeScale = 0f;
     }
 
@@ -28,10 +28,11 @@ public class UIPausePanel : MonoBehaviour
 
     public void QuitToMenu()
     {
-        // 일시정지 상태 해제 후 씬 전환
+        
         Time.timeScale = 1.0f;
         
         Debug.Log("Exiting to Main Menu...");
         SceneManager.LoadScene("OutGame");
     }
 }
+

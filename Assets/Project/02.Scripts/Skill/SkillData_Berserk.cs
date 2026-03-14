@@ -17,24 +17,25 @@ public class SkillData_Berserk : SkillData
         player.PlaySkillAnimation();
         player.SpawnSkillEffect(effectPrefab, Vector3.up * 0.5f);
 
-        // 버프 효과 시작
+        
         player.StartCoroutine(BerserkEffect(player));
         yield return null;
     }
 
     private IEnumerator BerserkEffect(PlayerUnit player)
     {
-        // [Todo] 버프 시각적 연출 추가
+        
         Debug.Log("<color=red>Berserk Activated!</color>");
         
         float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            // 로직상 처리는 PlayerUnit 등의 데미지 계산식에서 체크
+            
             yield return null;
         }
 
         Debug.Log("<color=white>Berserk Ended.</color>");
     }
 }
+

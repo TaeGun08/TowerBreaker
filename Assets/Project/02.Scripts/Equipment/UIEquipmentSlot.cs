@@ -20,7 +20,7 @@ public class UIEquipmentSlot : MonoBehaviour, IPointerClickHandler
         _onSelected = onSelected;
         _onDoubleClicked = onDoubleClicked;
 
-        // 1. 장비 데이터(SO)에서 아이콘과 색상을 가져와 즉시 적용
+        
         if (iconImage != null)
         {
             iconImage.sprite = data.icon;
@@ -37,7 +37,7 @@ public class UIEquipmentSlot : MonoBehaviour, IPointerClickHandler
             equippedCheck.SetActive(isEquipped);
         }
 
-        // 2. 버튼 클릭 이벤트 연결
+        
         if (button != null)
         {
             button.onClick.RemoveAllListeners();
@@ -47,10 +47,11 @@ public class UIEquipmentSlot : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        // 더블 클릭 시 장착 로직 실행
+        
         if (eventData.clickCount == 2)
         {
             _onDoubleClicked?.Invoke(_data);
         }
     }
 }
+

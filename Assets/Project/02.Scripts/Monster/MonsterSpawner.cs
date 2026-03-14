@@ -20,7 +20,7 @@ public class MonsterSpawner : MonoBehaviour
     public void SpawnMonsterByFloor(int floorCount, GameObject platform)
     {
         Swarm swarm = GetOrCreateSwarm(platform);
-        // [수정] floorCount가 0부터 시작하므로 +1을 해줘야 실제 층수(5, 10...)와 맞음
+        
         bool isBossFloor = ((floorCount + 1) % bossFloorInterval == 0);
 
         if (isBossFloor) SpawnBossSwarm(swarm, floorCount);
@@ -38,7 +38,7 @@ public class MonsterSpawner : MonoBehaviour
     {
         if (commonMonsterPrefab == null) return;
 
-        // 0부터 시작하므로 floorCount / 10이 10스테이지 클리어마다의 보너스
+        
         int bonusCount = floorCount / 10;
         int totalCount = Random.Range(baseMinCount, baseMaxCount + bonusCount + 1);
 
@@ -65,7 +65,7 @@ public class MonsterSpawner : MonoBehaviour
             return swarmObj.AddComponent<Swarm>();
         }
         
-        // [버그 수정]: 재사용되는 발판의 경우, 이전 층에서의 넉백 위치를 초기화
+        
         swarmTransform.localPosition = Vector3.zero;
         return swarmTransform.GetComponent<Swarm>();
     }
@@ -76,3 +76,4 @@ public class MonsterSpawner : MonoBehaviour
         if (swarm != null) swarm.Clear();
     }
 }
+

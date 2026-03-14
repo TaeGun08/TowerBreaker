@@ -38,7 +38,7 @@ public class VisualFeedback : MonoBehaviour
                 if (sr == null) continue;
                 originalColors.Add(sr.color);
                 
-                // 연한 회색 느낌: 밝기를 약간만 올림 (1.5f 정도)
+                
                 sr.color = new Color(1.5f, 1.5f, 1.5f, sr.color.a); 
             }
 
@@ -61,3 +61,4 @@ public class VisualFeedback : MonoBehaviour
         IsStunned = false;
     }
 }
+

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
 {
-    private const int GACHA_COST_CHEST = 1; // 뽑기 1회당 체스트 1개
+    private const int GACHA_COST_CHEST = 1; 
 
     public EquipmentData DrawEquipment()
     {
@@ -20,10 +20,10 @@ public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
             return null;
         }
 
-        // 1. 체스트 소모
+        
         CurrencyManager.Instance.AddChest(-GACHA_COST_CHEST);
 
-        // 2. 확률에 따른 티어 결정
+        
         float rand = UnityEngine.Random.value;
         EquipmentTier targetTier;
 
@@ -32,7 +32,7 @@ public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
         else if (rand < 0.40f) targetTier = EquipmentTier.Rare;
         else targetTier = EquipmentTier.Common;
 
-        // 3. 해당 티어의 장비 목록 추출 (EquipmentManager의 MasterDB 참조)
+        
         var possibleItems = EquipmentManager.Instance.MasterDB.Where(e => e.tier == targetTier).ToList();
 
         if (possibleItems.Count == 0)
@@ -41,7 +41,7 @@ public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
             return null;
         }
 
-        // 4. 랜덤 선택 및 획득 처리
+        
         int index = UnityEngine.Random.Range(0, possibleItems.Count);
         EquipmentData result = possibleItems[index];
 
@@ -50,3 +50,4 @@ public class EquipmentGachaManager : SingletonBase<EquipmentGachaManager>
         return result;
     }
 }
+

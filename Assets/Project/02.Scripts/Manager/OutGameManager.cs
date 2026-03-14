@@ -11,11 +11,11 @@ public class OutGameManager : SingletonBase<OutGameManager>
 
     protected override void Awake()
     {
-        // 1. 강제 환경 초기화 (먹통 방지)
+        
         Time.timeScale = 1.0f;
         PurgeAndRestoreEventSystem();
 
-        dontDestroy = false; // 아웃게임 매니저는 씬마다 새로 초기화되도록 설정
+        dontDestroy = false; 
         base.Awake();
         
         if (Instance == this)
@@ -26,14 +26,14 @@ public class OutGameManager : SingletonBase<OutGameManager>
 
     private void PurgeAndRestoreEventSystem()
     {
-        // 씬에 있는 모든 EventSystem 제거 (중복 및 충돌 방지)
+        
         EventSystem[] allEventSystems = Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
         foreach (var es in allEventSystems)
         {
             DestroyImmediate(es.gameObject);
         }
 
-        // 깨끗한 새 EventSystem 생성
+        
         GameObject newES = new GameObject("EventSystem_Restored");
         newES.AddComponent<EventSystem>();
         newES.AddComponent<StandaloneInputModule>();
@@ -109,3 +109,4 @@ public class OutGameManager : SingletonBase<OutGameManager>
 #endif
     }
 }
+

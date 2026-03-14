@@ -9,7 +9,7 @@ public class EquipmentIconAssigner : EditorWindow
     [MenuItem("TowerBreaker/Assign Equipment Icons")]
     public static void AssignIcons()
     {
-        // 1. 모든 장비 SO 찾기
+        
         string[] guids = AssetDatabase.FindAssets("t:EquipmentData");
         List<EquipmentData> allEquips = new List<EquipmentData>();
         foreach (string guid in guids)
@@ -17,7 +17,7 @@ public class EquipmentIconAssigner : EditorWindow
             allEquips.Add(AssetDatabase.LoadAssetAtPath<EquipmentData>(AssetDatabase.GUIDToAssetPath(guid)));
         }
 
-        // 2. 추천 아이콘 경로 매핑
+        
         Dictionary<string, string> iconMap = new Dictionary<string, string>
         {
             { "weapon_legendary_01", "Assets/Project/00.Assets/Cainos 1/Pixel Art Icon Pack - RPG/Texture/Weapon & Tool/Golden Sword.png" },
@@ -47,3 +47,4 @@ public class EquipmentIconAssigner : EditorWindow
     }
 }
 #endif
+

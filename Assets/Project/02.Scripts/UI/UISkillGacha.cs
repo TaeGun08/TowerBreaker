@@ -13,23 +13,23 @@ public class UISkillGacha : MonoBehaviour
 
     [Header("Result Info")]
     [SerializeField] private GameObject resultArea;
-    [SerializeField] private Image drawnSkillIcon; // 뽑힌 스킬 아이콘
+    [SerializeField] private Image drawnSkillIcon; 
     [SerializeField] private TextMeshProUGUI skillTierText;
 
     [Header("Selection Buttons")]
     [SerializeField] private GameObject selectionArea;
     [SerializeField] private Button slot1Button;
     [SerializeField] private Button slot2Button;
-    [SerializeField] private Image slot1Icon; // 슬롯 1 현재 스킬 아이콘
-    [SerializeField] private Image slot2Icon; // 슬롯 2 현재 스킬 아이콘
+    [SerializeField] private Image slot1Icon; 
+    [SerializeField] private Image slot2Icon; 
     [SerializeField] private Button skipButton;
 
     private SkillData _drawnSkill;
-    private const int GACHA_COST = 1000; // 가격 인상
+    private const int GACHA_COST = 1000; 
 
     private void Awake()
     {
-        // 버튼 자동 연결 (에디터 설정 실수 방지)
+        
         if (drawButton != null) drawButton.onClick.AddListener(OnClickDraw);
         if (slot1Button != null) slot1Button.onClick.AddListener(() => OnClickSlot(0));
         if (slot2Button != null) slot2Button.onClick.AddListener(() => OnClickSlot(1));
@@ -46,7 +46,7 @@ public class UISkillGacha : MonoBehaviour
         _drawnSkill = null;
         if (costText != null) costText.text = $"{GACHA_COST} Corpse";
         
-        // 메인 뽑기 버튼 초기화
+        
         if (drawButton != null) 
         {
             drawButton.gameObject.SetActive(true);
@@ -55,7 +55,7 @@ public class UISkillGacha : MonoBehaviour
             if (btnText != null) btnText.text = "Draw Skill";
         }
 
-        // 결과 및 선택 영역 초기화 (비활성화)
+        
         if (resultArea != null) resultArea.SetActive(false);
         if (selectionArea != null) selectionArea.SetActive(false);
         
@@ -73,7 +73,7 @@ public class UISkillGacha : MonoBehaviour
         CurrencyManager.Instance.UseCorpse(GACHA_COST);
         _drawnSkill = SkillGachaManager.Instance.DrawRandomSkill();
         
-        // 다시 뽑기 시 이전 결과 영역을 껐다 켜서 갱신 보장
+        
         if (resultArea != null) resultArea.SetActive(false);
         if (selectionArea != null) selectionArea.SetActive(false);
 
@@ -84,18 +84,18 @@ public class UISkillGacha : MonoBehaviour
     {
         if (skill == null) return;
         
-        // 1. 뽑기 버튼 텍스트 변경
+        
         if (drawButton != null)
         {
             var btnText = drawButton.GetComponentInChildren<TextMeshProUGUI>();
             if (btnText != null) btnText.text = $"Reroll ({GACHA_COST})";
         }
 
-        // 2. 부모 영역들 강제 활성화 (중요!)
+        
         if (resultArea != null) resultArea.SetActive(true);
         if (selectionArea != null) selectionArea.SetActive(true);
 
-        // 3. 내용 표시
+        
         if (drawnSkillIcon != null)
         {
             drawnSkillIcon.sprite = skill.icon;
@@ -115,7 +115,7 @@ public class UISkillGacha : MonoBehaviour
 
         if (messageText != null) messageText.text = skill.description;
 
-        // 4. 슬롯 버튼들 활성화
+        
         UpdateSlotButtons();
     }
 
@@ -124,9 +124,9 @@ public class UISkillGacha : MonoBehaviour
         if (PlayerUnit.Instance == null) return;
         var currentSkills = PlayerUnit.Instance.CurrentSkills;
 
-        // [수정] 버튼과 아이콘의 GameObject를 절대 끄지 않음 (항상 보이도록 유지)
         
-        // 슬롯 1 설정
+        
+        
         if (slot1Button != null)
         {
             slot1Button.gameObject.SetActive(true);
@@ -138,7 +138,7 @@ public class UISkillGacha : MonoBehaviour
             
             if (slot1Icon != null)
             {
-                slot1Icon.gameObject.SetActive(true); // 항상 켬
+                slot1Icon.gameObject.SetActive(true); 
                 if (hasSkill && currentSkills[0] != null && currentSkills[0].Data != null) 
                 {
                     slot1Icon.sprite = currentSkills[0].Data.icon;
@@ -147,12 +147,12 @@ public class UISkillGacha : MonoBehaviour
                 else
                 {
                     slot1Icon.sprite = null;
-                    slot1Icon.color = new Color(1, 1, 1, 0); // 스킬 없으면 투명하게
+                    slot1Icon.color = new Color(1, 1, 1, 0); 
                 }
             }
         }
 
-        // 슬롯 2 설정
+        
         if (slot2Button != null)
         {
             slot2Button.gameObject.SetActive(true);
@@ -164,7 +164,7 @@ public class UISkillGacha : MonoBehaviour
             
             if (slot2Icon != null)
             {
-                slot2Icon.gameObject.SetActive(true); // 항상 켬
+                slot2Icon.gameObject.SetActive(true); 
                 if (hasSkill && currentSkills[1] != null && currentSkills[1].Data != null) 
                 {
                     slot2Icon.sprite = currentSkills[1].Data.icon;
@@ -173,7 +173,7 @@ public class UISkillGacha : MonoBehaviour
                 else
                 {
                     slot2Icon.sprite = null;
-                    slot2Icon.color = new Color(1, 1, 1, 0); // 스킬 없으면 투명하게
+                    slot2Icon.color = new Color(1, 1, 1, 0); 
                 }
             }
         }
@@ -209,3 +209,4 @@ public class UISkillGacha : MonoBehaviour
         gameObject.SetActive(false);
     }
 }
+

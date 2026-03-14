@@ -32,7 +32,7 @@ public abstract class Monster : MonoBehaviour, IDamageable
     public float MoveSpeed => moveSpeed;
     public MonsterType Type => type;
 
-    // 모든 몬스터의 개별 정지 거리 (0.7f로 통일)
+    
     public virtual float StopDistance => 0.7f;
 
     #endregion
@@ -171,3 +171,4 @@ public abstract class Monster : MonoBehaviour, IDamageable
 
     #endregion
 }
+

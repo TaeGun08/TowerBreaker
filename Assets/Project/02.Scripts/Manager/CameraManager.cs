@@ -11,7 +11,7 @@ public class CameraManager : SingletonBase<CameraManager>
 
     protected override void Awake()
     {
-        dontDestroy = false; // 씬 전환 시 새로 세팅되도록 함
+        dontDestroy = false; 
         base.Awake();
         
         if (targetCamera == null)
@@ -21,9 +21,9 @@ public class CameraManager : SingletonBase<CameraManager>
         _originalPos = targetCamera.position;
     }
 
-    /// <summary>
-    /// 화면을 흔드는 연출을 실행합니다.
-    /// </summary>
+    
+    
+    
     public void Shake(float intensity, float duration)
     {
         if (_shakeCoroutine != null) StopCoroutine(_shakeCoroutine);
@@ -44,11 +44,12 @@ public class CameraManager : SingletonBase<CameraManager>
         _shakeCoroutine = null;
     }
 
-    /// <summary>
-    /// 카메라의 원본 위치를 업데이트합니다 (층 전환 등으로 위치가 바뀔 경우 대비).
-    /// </summary>
+    
+    
+    
     public void UpdateOriginalPosition(Vector3 newPos)
     {
         _originalPos = newPos;
     }
 }
+

@@ -22,7 +22,7 @@ public class UIGachaPanel : MonoBehaviour
 
     private void Awake()
     {
-        // 버튼 이벤트 연결
+        
         if (drawButton != null) drawButton.onClick.AddListener(OnClickDraw);
         if (backButton != null) backButton.onClick.AddListener(OnClickBack);
     }
@@ -46,13 +46,13 @@ public class UIGachaPanel : MonoBehaviour
         }
     }
 
-    private bool _isDrawing = false; // 중복 클릭 방지용 플래그
+    private bool _isDrawing = false; 
 
     public void OnClickDraw()
     {
-        if (_isDrawing) return; // 이미 뽑는 중이면 무시
+        if (_isDrawing) return; 
 
-        // 1. 재화 검사
+        
         if (CurrencyManager.Instance == null || CurrencyManager.Instance.TotalChests < 1)
         {
             if (totalChestText != null) totalChestText.text = "<color=red>NOT ENOUGH CHESTS!</color>";
@@ -125,3 +125,4 @@ public class UIGachaPanel : MonoBehaviour
         OutGameManager.Instance.ShowMainPanel();
     }
 }
+

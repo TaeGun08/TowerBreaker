@@ -43,7 +43,7 @@ public class Corpse : MonoBehaviour
 
         if (_rigid != null) _rigid.simulated = false;
 
-        // [수정] 연출과 별개로 재화 추가 로직을 즉시 실행 (혹은 매우 짧은 지연 후)
+        
         int reward = _originType == MonsterType.Boss ? 150 : 20;
         if (CurrencyManager.Instance != null)
         {
@@ -60,3 +60,4 @@ public class Corpse : MonoBehaviour
         }
     }
 }
+

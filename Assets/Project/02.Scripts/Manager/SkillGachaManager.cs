@@ -10,10 +10,10 @@ public class SkillGachaManager : SingletonBase<SkillGachaManager>
 
     public void OpenGachaUI()
     {
-        // 게임 일시 정지
+        
         Time.timeScale = 0f;
         
-        // UI 오픈 (InGameUIManager를 통해 패널 활성화)
+        
         if (InGameUIManager.Instance != null)
         {
             InGameUIManager.Instance.ShowSkillGachaPanel();
@@ -33,3 +33,4 @@ public class SkillGachaManager : SingletonBase<SkillGachaManager>
         Time.timeScale = 1.0f;
     }
 }
+

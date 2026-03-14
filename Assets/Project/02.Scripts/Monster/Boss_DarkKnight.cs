@@ -41,7 +41,7 @@ public class Boss_DarkKnight : Monster
         if (_isPatternRunning || PlayerUnit.Instance == null || !IsInActiveSwarm()) return false;
         
         float sqrDist = (transform.position - PlayerUnit.Instance.transform.position).sqrMagnitude;
-        return sqrDist < 64.0f; // 8.0f 거리 이내
+        return sqrDist < 64.0f; 
     }
 
     private IEnumerator PatternCycle()
@@ -50,7 +50,7 @@ public class Boss_DarkKnight : Monster
 
         while (IsInActiveSwarm())
         {
-            // 패턴 사이 대기 시간 (2.0s ~ 3.5s)
+            
             yield return new WaitForSeconds(Random.Range(2.0f, 3.5f));
 
             if (PlayerUnit.Instance != null && PlayerUnit.Instance.IsTransitioning) continue;
@@ -68,7 +68,7 @@ public class Boss_DarkKnight : Monster
         IsMoveStop = true; 
         if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         
-        // 1. 준비 동작 (뒤로 물러남)
+        
         Vector3 startPos = transform.position;
         Vector3 backPos = startPos + Vector3.right * 0.5f;
         
@@ -82,7 +82,7 @@ public class Boss_DarkKnight : Monster
 
         yield return new WaitForSeconds(0.3f); 
 
-        // 2. 돌진
+        
         Vector3 dashTarget = transform.position + Vector3.left * dashDistance;
         t = 0;
         while (t < 1)
@@ -102,7 +102,7 @@ public class Boss_DarkKnight : Monster
         IsMoveStop = true;
         if (animator != null) animator.SetTrigger(AnimAttackTrigger);
         
-        // 0.7s 선딜레이
+        
         yield return new WaitForSeconds(0.7f); 
 
         if (PlayerUnit.Instance != null)
@@ -116,7 +116,7 @@ public class Boss_DarkKnight : Monster
             }
         }
 
-        yield return new WaitForSeconds(0.7f); // 후딜레이
+        yield return new WaitForSeconds(0.7f); 
         IsMoveStop = false;
     }
 
@@ -136,3 +136,4 @@ public class Boss_DarkKnight : Monster
 
     #endregion
 }
+

@@ -17,7 +17,7 @@ public class SkillData_LeapStrike : SkillData
     public override IEnumerator Execute(PlayerUnit player)
     {
         player.IsInvulnerable = true;
-        player.PlaySkillAnimation(); // 도약 전 모션
+        player.PlaySkillAnimation(); 
 
         Vector3 startPos = player.transform.position;
         Vector3 targetPos = startPos + Vector3.right * jumpDistance;
@@ -31,10 +31,10 @@ public class SkillData_LeapStrike : SkillData
             Vector3 m2 = Vector3.Lerp(peakPos, targetPos, t);
             Vector3 nextPos = Vector3.Lerp(m1, m2, t);
 
-            // [추가] 몬스터 뒤로 넘어가지 않도록 실시간 체크
+            
             if (player.IsMonsterAhead(nextPos, 0.4f))
             {
-                targetPos = nextPos; // 현재 위치를 착지 지점으로 고정
+                targetPos = nextPos; 
                 break;
             }
 
@@ -42,9 +42,9 @@ public class SkillData_LeapStrike : SkillData
             yield return null;
         }
 
-        // 착지 타격 및 이펙트
+        
         player.transform.position = targetPos;
-        player.SpawnSkillEffect(effectPrefab, Vector3.zero); // 착지 지점에 이펙트
+        player.SpawnSkillEffect(effectPrefab, Vector3.zero); 
 
         Swarm swarm = StageManager.Instance?.CurrentSwarm;
         if (swarm != null)
@@ -57,3 +57,4 @@ public class SkillData_LeapStrike : SkillData
         player.IsInvulnerable = false;
     }
 }
+

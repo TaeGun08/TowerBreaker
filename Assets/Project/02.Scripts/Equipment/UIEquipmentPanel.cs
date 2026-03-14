@@ -6,10 +6,10 @@ using UnityEngine.UI;
 public class UIEquipmentPanel : MonoBehaviour
 {
     [Header("Manual Assignments")]
-    [SerializeField] private Transform contentParent; // 인벤토리 리스트 부모
+    [SerializeField] private Transform contentParent; 
     [SerializeField] private UIEquipmentSlot slotPrefab;
 
-    // 내부 자동 할당 요소들
+    
     private UIEquipmentSlot weaponSlot;
     private UIEquipmentSlot armorSlot;
     private UIEquipmentSlot helmetSlot;
@@ -35,14 +35,14 @@ public class UIEquipmentPanel : MonoBehaviour
 
     private void AutoAssignUI()
     {
-        // 텍스트 및 버튼 자동 찾기
+        
         itemNameText = FindChild<TextMeshProUGUI>("ItemName");
         itemStatsText = FindChild<TextMeshProUGUI>("ItemStats");
         equipButton = FindChild<Button>("Equip_Button");
         if (equipButton != null) equipButtonText = equipButton.GetComponentInChildren<TextMeshProUGUI>();
         backButton = FindChild<Button>("Back_Button");
 
-        // 부위별 슬롯 자동 찾기 (이름 규칙: Slot_Weapon, Slot_Armor 등)
+        
         _equippedSlots.Clear();
         weaponSlot = FindChild<UIEquipmentSlot>("Slot_Weapon");
         armorSlot = FindChild<UIEquipmentSlot>("Slot_Armor");
@@ -65,7 +65,7 @@ public class UIEquipmentPanel : MonoBehaviour
 
     private void OnEnable()
     {
-        // 참조 재검증
+        
         if (itemNameText == null) AutoAssignUI();
         
         RefreshUI();
@@ -193,3 +193,4 @@ public class UIEquipmentPanel : MonoBehaviour
         OutGameManager.Instance.ShowMainPanel();
     }
 }
+
