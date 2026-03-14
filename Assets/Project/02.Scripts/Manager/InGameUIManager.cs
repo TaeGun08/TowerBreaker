@@ -24,6 +24,9 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
     [Header("Pause Menu")]
     [SerializeField] private GameObject pausePanel;
 
+    [Header("Game Over")]
+    [SerializeField] private GameObject gameOverPanel;
+
     [Header("Skill Buttons")]
     [SerializeField] private UISkillButton[] skillButtons; // 인스펙터에서 2개 할당
 
@@ -245,6 +248,14 @@ public class InGameUIManager : SingletonBase<InGameUIManager>
         if (pausePanel != null)
         {
             pausePanel.SetActive(true);
+        }
+    }
+
+    public void ShowGameOverPanel()
+    {
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
         }
     }
 

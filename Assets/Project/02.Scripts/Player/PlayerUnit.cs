@@ -143,7 +143,8 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
     public void TakeDamage(int damage, bool isCrit = false, bool isProjectile = false)
     {
-        if (IsInvulnerable || _isTransitioning) return;
+        // [수정] 이미 비활성화(사망) 되었거나 무적/이동 중이면 무시
+        if (!gameObject.activeInHierarchy || IsInvulnerable || _isTransitioning) return;
 
         if (IsActionActive)
         {
@@ -154,7 +155,10 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
 
         _statsController.ApplyDamage(damage);
         if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.1f, 0.1f);
+        
+        // 유효한 상태일 때만 피격 효과 실행
         if (_feedback != null) _feedback.PlayHitEffect(canPlayAnimation: !IsActionActive);
+        
         if (CurrentHP <= 0) Die();
     }
 
@@ -205,7 +209,41 @@ public class PlayerUnit : SingletonBase<PlayerUnit>, IDamageable
         else _contactDamageTimer = 0f;
     }
 
-    private void Die() => Debug.Log("<color=black>Player Dead...</color>");
+    [Header("Death Effects")]
+    [SerializeField] private Corpse[] deathFragments; // 플레이어 사망 파편들
+    [SerializeField] private float deathSlowdown = 0.2f; // 슬로우 강도
+
+    private void Die()
+    {
+        if (IsInvulnerable) return; // 무적 상태면 죽지 않음
+
+        Debug.Log("<color=red>Player Unit Died!</color>");
+        
+        // 1. 슬로우 모션 적용
+        Time.timeScale = deathSlowdown;
+        
+        // 2. 카메라 강한 흔들림
+        if (CameraManager.Instance != null) CameraManager.Instance.Shake(0.5f, 0.5f);
+
+        // 3. 파편 소환 (몬스터 시체 로직 재활용)
+        if (deathFragments != null)
+        {
+            foreach (var frag in deathFragments)
+            {
+                if (frag == null) continue;
+                Instantiate(frag, transform.position, Quaternion.identity);
+            }
+        }
+
+        // 4. 스테이지 매니저에게 사망 알림
+        if (StageManager.Instance != null)
+        {
+            // StageManager에서 HandleGameOver를 부르도록 유도
+            // (이미 StageManager Update에서 체크 중이므로 플래그만으로도 작동 가능)
+        }
+
+        gameObject.SetActive(false);
+    }
 
     #endregion
 

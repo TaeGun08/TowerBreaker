@@ -76,17 +76,20 @@ public class StageManager : SingletonBase<StageManager>
     private void HandleGameOver()
     {
         _isGameOver = true;
-        Debug.Log("<color=red>Game Over! Returning to Main Menu...</color>");
+        Debug.Log("<color=red>Game Over! Showing Results...</color>");
         StartCoroutine(GameOverSequence());
     }
 
     private IEnumerator GameOverSequence()
     {
-        // 사망 연출 대기
-        yield return new WaitForSecondsRealtime(2.5f);
+        // 1. 플레이어 사망 연출(슬로우 등)을 감상할 시간 확보
+        yield return new WaitForSecondsRealtime(2.0f);
         
-        // 메인 메뉴 씬으로 이동
-        SceneManager.LoadScene("OutGame");
+        // 2. 인게임 UI 매니저를 통해 결과창 띄우기
+        if (InGameUIManager.Instance != null)
+        {
+            InGameUIManager.Instance.ShowGameOverPanel();
+        }
     }
 
     private void HandleSwarmCleared()
