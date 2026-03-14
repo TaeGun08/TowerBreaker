@@ -13,18 +13,28 @@ public class UISkillGacha : MonoBehaviour
 
     [Header("Result Info")]
     [SerializeField] private GameObject resultArea;
-    [SerializeField] private TextMeshProUGUI skillNameText;
+    [SerializeField] private Image drawnSkillIcon; // 뽑힌 스킬 아이콘
     [SerializeField] private TextMeshProUGUI skillTierText;
-    [SerializeField] private TextMeshProUGUI skillDescText;
 
     [Header("Selection Buttons")]
     [SerializeField] private GameObject selectionArea;
     [SerializeField] private Button slot1Button;
     [SerializeField] private Button slot2Button;
+    [SerializeField] private Image slot1Icon; // 슬롯 1 현재 스킬 아이콘
+    [SerializeField] private Image slot2Icon; // 슬롯 2 현재 스킬 아이콘
     [SerializeField] private Button skipButton;
 
     private SkillData _drawnSkill;
     private const int GACHA_COST = 100;
+
+    private void Awake()
+    {
+        // 버튼 자동 연결 (에디터 설정 실수 방지)
+        if (drawButton != null) drawButton.onClick.AddListener(OnClickDraw);
+        if (slot1Button != null) slot1Button.onClick.AddListener(() => OnClickSlot(0));
+        if (slot2Button != null) slot2Button.onClick.AddListener(() => OnClickSlot(1));
+        if (skipButton != null) skipButton.onClick.AddListener(OnClickSkip);
+    }
 
     private void OnEnable()
     {
@@ -61,7 +71,12 @@ public class UISkillGacha : MonoBehaviour
         if (resultArea != null) resultArea.SetActive(true);
         if (selectionArea != null) selectionArea.SetActive(true);
 
-        // [수정] 이름과 설명 텍스트 표시 로직 제거 (효과와 아이콘에만 집중)
+        if (drawnSkillIcon != null)
+        {
+            drawnSkillIcon.sprite = skill.icon;
+            drawnSkillIcon.gameObject.SetActive(true);
+        }
+
         if (skillTierText != null) skillTierText.text = $"[{skill.Tier.ToString().ToUpper()}]";
 
         // 등급별 색상 적용
@@ -80,17 +95,36 @@ public class UISkillGacha : MonoBehaviour
     private void UpdateSlotButtons()
     {
         if (PlayerUnit.Instance == null) return;
-        var skills = PlayerUnit.Instance.CurrentSkills;
+        var currentSkills = PlayerUnit.Instance.CurrentSkills;
 
-        // [수정] 스킬 이름을 포함하지 않고 단순한 슬롯 번호만 표기
+        // 슬롯 1 설정
         if (slot1Button != null)
         {
-            slot1Button.GetComponentInChildren<TextMeshProUGUI>().text = "Slot 1";
+            bool hasSkill = currentSkills.Count > 0;
+            var tmp = slot1Button.GetComponentInChildren<TextMeshProUGUI>();
+            if (tmp != null) tmp.text = hasSkill ? "Replace Slot 1" : "Equip to Slot 1";
+            
+            if (slot1Icon != null)
+            {
+                slot1Icon.gameObject.SetActive(hasSkill);
+                if (hasSkill && currentSkills[0] != null && currentSkills[0].Data != null) 
+                    slot1Icon.sprite = currentSkills[0].Data.icon;
+            }
         }
 
+        // 슬롯 2 설정
         if (slot2Button != null)
         {
-            slot2Button.GetComponentInChildren<TextMeshProUGUI>().text = "Slot 2";
+            bool hasSkill = currentSkills.Count > 1;
+            var tmp = slot2Button.GetComponentInChildren<TextMeshProUGUI>();
+            if (tmp != null) tmp.text = hasSkill ? "Replace Slot 2" : "Equip to Slot 2";
+            
+            if (slot2Icon != null)
+            {
+                slot2Icon.gameObject.SetActive(hasSkill);
+                if (hasSkill && currentSkills[1] != null && currentSkills[1].Data != null) 
+                    slot2Icon.sprite = currentSkills[1].Data.icon;
+            }
         }
     }
 

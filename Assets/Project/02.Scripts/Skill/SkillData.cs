@@ -9,8 +9,8 @@ public enum SkillTier
 public abstract class SkillData : ScriptableObject
 {
     [Header("Skill Settings")]
-    public abstract SkillTier Tier { get; } // 등급은 하위 클래스에서 결정
-    public Sprite icon;
+    public abstract SkillTier Tier { get; } 
+    public Sprite icon; // 아이콘 복구
     public float cooldown;
 
     // 실제 스킬 로직 (상속받아 구현)

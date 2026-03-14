@@ -81,16 +81,18 @@ public class StageManager : SingletonBase<StageManager>
             }
         }
 
-        bool wasBoss = ((StageCount + 1) % 5 == 0); 
+        // 현재 막 클리어한 층이 보스 층인지 확인 (5, 10, 15...)
+        int clearedFloor = StageCount + 1;
+        bool wasBoss = (clearedFloor % 5 == 0); 
         
-        // 보스 클리어 시 스킬 뽑기 오픈 (게임 일시 정지 및 UI 팝업)
+        // 보스 클리어 시 스킬 뽑기 오픈
         if (wasBoss && SkillGachaManager.Instance != null)
         {
             SkillGachaManager.Instance.OpenGachaUI();
         }
         else if (!wasBoss && PlayerUnit.Instance != null)
         {
-            // 일반 스테이지는 기존처럼 랜덤 스탯 강화
+            // 일반 스테이지는 랜덤 스탯 강화
             string msg = PlayerUnit.Instance.UpgradeRandomStat();
             if (InGameUIManager.Instance != null) InGameUIManager.Instance.ShowUpgradeNotice(msg);
         }

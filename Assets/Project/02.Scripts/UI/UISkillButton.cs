@@ -5,7 +5,7 @@ using TMPro;
 public class UISkillButton : MonoBehaviour
 {
     [SerializeField] private int skillSlotIndex; // 0 또는 1
-    [SerializeField] private Image iconImage;
+    [SerializeField] private Image iconImage; // 아이콘 복구
     [SerializeField] private Image cooldownImage;
     [SerializeField] private Button button;
 
@@ -21,7 +21,7 @@ public class UISkillButton : MonoBehaviour
     {
         _assignedInstance = instance;
         gameObject.SetActive(instance != null);
-        
+
         if (instance != null && iconImage != null)
         {
             iconImage.sprite = instance.Data.icon;

@@ -20,7 +20,8 @@ public class MonsterSpawner : MonoBehaviour
     public void SpawnMonsterByFloor(int floorCount, GameObject platform)
     {
         Swarm swarm = GetOrCreateSwarm(platform);
-        bool isBossFloor = (floorCount > 0) && (floorCount % bossFloorInterval == 0);
+        // [수정] floorCount가 0부터 시작하므로 +1을 해줘야 실제 층수(5, 10...)와 맞음
+        bool isBossFloor = ((floorCount + 1) % bossFloorInterval == 0);
 
         if (isBossFloor) SpawnBossSwarm(swarm, floorCount);
         else SpawnMixedSwarm(swarm, floorCount);
